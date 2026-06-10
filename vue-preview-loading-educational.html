@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>شرح تعليمي: مشكلة Generating preview في Vue</title>
+  
+  <!-- Google Fonts: Tajawal & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    /* CSS CSS Reset & Custom Design System */
+    :root {
+      /* Dark Theme (Default) Variables */
+      --bg-main: #0b0f19;
+      --bg-card: #151c2c;
+      --bg-code: #0b0f19;
+      --bg-senior: #1e293b;
+      --border-color: #27354f;
+      --border-senior: #10b981;
+      --text-primary: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-headings: #ffffff;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-glow: rgba(79, 70, 229, 0.3);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.15);
+      --danger: #ef4444;
+      --danger-glow: rgba(239, 68, 68, 0.15);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.15);
+      --font-family-sans: 'Tajawal', sans-serif;
+      --font-family-mono: 'JetBrains Mono', Consolas, monospace;
+      --transition-speed: 0.3s;
+    }
+
+    [data-theme="light"] {
+      /* Light Theme Variables */
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-code: #1e293b; /* keep code dark for readability */
+      --bg-senior: #f0fdf4;
+      --border-color: #e2e8f0;
+      --border-senior: #a7f3d0;
+      --text-primary: #1e293b;
+      --text-muted: #64748b;
+      --text-headings: #0f172a;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-glow: rgba(37, 99, 235, 0.1);
+      --success: #059669;
+      --success-glow: rgba(5, 150, 105, 0.1);
+      --danger: #dc2626;
+      --danger-glow: rgba(220, 38, 38, 0.1);
+      --warning: #d97706;
+      --warning-glow: rgba(217, 119, 6, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-family-sans);
+      line-height: 1.8;
+      transition: background-color var(--transition-speed), color var(--transition-speed);
+      padding-top: 70px;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-main);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary);
+    }
+
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: rgba(21, 28, 44, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 1000;
+      transition: background-color var(--transition-speed), border-color var(--transition-speed);
+    }
+
+    [data-theme="light"] .navbar {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .navbar-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-headings);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      border-color: var(--primary);
+      background: var(--primary-glow);
+    }
+
+    /* Reading Progress Bar */
+    .progress-container {
+      position: fixed;
+      top: 70px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: transparent;
+      z-index: 999;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      width: 0%;
+      transition: width 0.1s ease;
+    }
+
+    /* Header Container */
+    header {
+      background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.15), transparent 60%),
+                  radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08), transparent 60%);
+      padding: 60px 20px 40px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--text-headings);
+      margin-bottom: 15px;
+      background: linear-gradient(135deg, var(--text-headings), var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Main Container & Sidebar Grid */
+    .main-container {
+      max-width: 1300px;
+      margin: 40px auto 100px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: 3fr 1fr;
+      gap: 40px;
+    }
+
+    @media (max-width: 1024px) {
+      .main-container {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-column {
+        display: none; /* Hide floating TOC on smaller screens */
+      }
+    }
+
+    /* Main Content Column */
+    .content-column {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    /* Sidebar Column */
+    .sidebar-column {
+      position: sticky;
+      top: 100px;
+      align-self: start;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .toc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .toc-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: var(--text-headings);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toc-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      display: block;
+      border-right: 3px solid transparent;
+      padding-right: 12px;
+    }
+
+    .toc-link:hover, .toc-link.active {
+      color: var(--primary);
+      border-right-color: var(--primary);
+      font-weight: bold;
+      transform: translateX(-4px);
+    }
+
+    /* Article Card styling */
+    article.card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+      transition: background-color var(--transition-speed), border-color var(--transition-speed);
+    }
+
+    @media (max-width: 640px) {
+      article.card {
+        padding: 24px 16px;
+      }
+    }
+
+    /* Headers inside article */
+    h1.section-title, h2.section-title, h3.section-title {
+      color: var(--text-headings);
+      margin-top: 40px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    h1.section-title {
+      font-size: 1.85rem;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 15px;
+    }
+
+    h2.section-title {
+      font-size: 1.5rem;
+      border-right: 4px solid var(--primary);
+      padding-right: 15px;
+    }
+
+    h3.section-title {
+      font-size: 1.25rem;
+      color: var(--primary);
+    }
+
+    p.paragraph {
+      margin-bottom: 20px;
+      color: var(--text-primary);
+      font-size: 1.05rem;
+    }
+
+    /* List styling */
+    ul.stylish-list {
+      list-style-type: none;
+      margin: 20px 0;
+      padding-right: 20px;
+    }
+
+    ul.stylish-list li {
+      position: relative;
+      margin-bottom: 12px;
+      padding-right: 25px;
+      color: var(--text-primary);
+    }
+
+    ul.stylish-list li::before {
+      content: "✦";
+      position: absolute;
+      right: 0;
+      color: var(--primary);
+      font-weight: bold;
+    }
+
+    /* Code Block Containers */
+    .code-container {
+      position: relative;
+      margin: 24px 0;
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .code-lang {
+      font-family: var(--font-family-mono);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-family: var(--font-family-sans);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: #fff;
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      color: #fff;
+      border-color: var(--success);
+    }
+
+    pre.code-block {
+      direction: ltr;
+      text-align: left;
+      padding: 20px;
+      overflow-x: auto;
+      font-family: var(--font-family-mono);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    code {
+      font-family: var(--font-family-mono);
+      color: #e5e7eb;
+    }
+
+    /* Inline Code Styling */
+    code.inline-code {
+      background: rgba(79, 70, 229, 0.1);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      color: #a855f7;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    [data-theme="light"] code.inline-code {
+      background: rgba(37, 99, 235, 0.05);
+      border-color: rgba(37, 99, 235, 0.15);
+      color: #2563eb;
+    }
+
+    /* Senior Insights (تبسيط سينيور) */
+    .senior-card {
+      background: var(--bg-senior);
+      border: 1px solid var(--border-color);
+      border-right: 5px solid var(--border-senior);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 30px 0;
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.03);
+      transition: all 0.3s ease;
+    }
+
+    .senior-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .senior-avatar {
+      font-size: 1.6rem;
+      background: var(--success-glow);
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 1px solid var(--border-senior);
+    }
+
+    .senior-title-text {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--text-headings);
+    }
+
+    .senior-body {
+      font-size: 1rem;
+      color: var(--text-primary);
+      line-height: 1.8;
+    }
+
+    /* Note and Warning Alert Blocks */
+    .alert-card {
+      padding: 20px;
+      border-radius: 14px;
+      margin: 24px 0;
+      border: 1px solid transparent;
+      display: flex;
+      gap: 16px;
+    }
+
+    .alert-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+
+    .alert-content strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text-headings);
+      font-size: 1.05rem;
+    }
+
+    .alert-card.note {
+      background: rgba(79, 70, 229, 0.05);
+      border-color: rgba(79, 70, 229, 0.15);
+      border-right: 5px solid var(--primary);
+    }
+
+    .alert-card.warning {
+      background: rgba(245, 158, 11, 0.05);
+      border-color: rgba(245, 158, 11, 0.15);
+      border-right: 5px solid var(--warning);
+    }
+
+    .alert-card.summary {
+      background: rgba(16, 185, 129, 0.05);
+      border-color: rgba(16, 185, 129, 0.15);
+      border-right: 5px solid var(--success);
+    }
+
+    /* SVG Deadlock Cycle Diagram */
+    .deadlock-visualizer-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 40px 0;
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .deadlock-visualizer-title {
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: var(--text-headings);
+    }
+
+    .deadlock-svg {
+      max-width: 450px;
+      width: 100%;
+    }
+
+    .deadlock-node {
+      fill: var(--bg-card);
+      stroke: var(--border-color);
+      stroke-width: 2;
+      transition: all 0.3s ease;
+    }
+
+    .deadlock-node.critical {
+      stroke: var(--danger);
+      fill: rgba(239, 68, 68, 0.05);
+    }
+
+    .deadlock-node-text {
+      font-family: var(--font-family-sans);
+      font-size: 12px;
+      fill: var(--text-primary);
+      font-weight: bold;
+    }
+
+    .deadlock-arrow {
+      fill: none;
+      stroke: var(--border-color);
+      stroke-width: 2;
+      marker-end: url(#arrow);
+    }
+
+    .deadlock-arrow.active {
+      stroke: var(--danger);
+      stroke-dasharray: 5, 5;
+      animation: dash 10s linear infinite;
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -100;
+      }
+    }
+
+    /* Interactive Simulator */
+    .simulator-container {
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      background: var(--bg-card);
+      overflow: hidden;
+      margin: 40px 0;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+
+    .sim-header {
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sim-tabs {
+      display: flex;
+      gap: 12px;
+    }
+
+    .sim-tab-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: var(--font-family-sans);
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .sim-tab-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .sim-tab-btn:hover:not(.active) {
+      border-color: var(--primary);
+      color: var(--text-primary);
+    }
+
+    .sim-body {
+      padding: 30px;
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .sim-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sim-body.active {
+      display: grid;
+    }
+
+    .sim-control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sim-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-family: var(--font-family-sans);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .sim-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .sim-btn.danger-btn {
+      background: var(--danger);
+    }
+    .sim-btn.danger-btn:hover {
+      background: #dc2626;
+    }
+
+    .sim-log {
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 15px;
+      font-family: var(--font-family-mono);
+      font-size: 0.85rem;
+      height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-info { color: #3b82f6; }
+    .log-warning { color: #f59e0b; }
+    .log-danger { color: #ef4444; }
+    .log-critical { color: #ef4444; font-weight: bold; background: rgba(239, 68, 68, 0.1); padding: 4px; border-radius: 4px; }
+    .log-success { color: #10b981; }
+
+    /* Visual Simulation Display Box */
+    .sim-preview-box {
+      border: 2px dashed var(--border-color);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      background: rgba(0, 0, 0, 0.05);
+      min-height: 250px;
+    }
+
+    .preview-badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: var(--border-color);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .preview-badge.success-badge {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .preview-badge.danger-badge {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border-left-color: var(--primary);
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    .spinner.danger-spinner {
+      border-left-color: var(--danger);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Skeleton Loader Simulation */
+    .skeleton-loader {
+      width: 100%;
+      height: 140px;
+      background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-card) 50%, var(--border-color) 75%);
+      background-size: 200% 100%;
+      animation: loading-skeleton 1.5s infinite;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    @keyframes loading-skeleton {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-bar {
+      width: 60%;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+    }
+
+    /* Simulated Image rendering */
+    .sim-rendered-img {
+      width: 100%;
+      max-height: 150px;
+      object-fit: cover;
+      border-radius: 12px;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: all 0.5s ease;
+      display: none;
+    }
+
+    .sim-rendered-img.loaded {
+      display: block;
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      background: var(--border-color);
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-bar-fill {
+      background: var(--success);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Footer styling */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      font-size: 0.9rem;
+      margin-top: 60px;
+    }
+
+    /* Code Token Coloring for custom highlighting */
+    .token.keyword { color: #f472b6; font-weight: bold; }
+    .token.attr-name { color: #60a5fa; }
+    .token.attr-value { color: #34d399; }
+    .token.tag { color: #f87171; }
+    .token.comment { color: #6b7280; font-style: italic; }
+    .token.string { color: #a7f3d0; }
+    .token.function { color: #fbbf24; }
+    .token.number { color: #f59e0b; }
+    .token.boolean { color: #fb7185; }
+
+    [data-theme="light"] .token.keyword { color: #db2777; }
+    [data-theme="light"] .token.attr-name { color: #2563eb; }
+    [data-theme="light"] .token.attr-value { color: #059669; }
+    [data-theme="light"] .token.tag { color: #dc2626; }
+    [data-theme="light"] .token.string { color: #047857; }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-title">
+      <span>🎓</span>
+      <span>شرح مشكلة الـ Preview Loading في Vue</span>
+    </div>
+    <button class="theme-toggle-btn" onclick="toggleTheme()" title="تغيير المظهر">
+      <svg id="theme-icon" width="20" height="20" fill="none" viewBox="0 0 24 24"></svg>
+    </button>
+  </nav>
+
+  <!-- Reading Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-bar" id="reading-progress"></div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1>مشكلة Generating preview في Vue</h1>
+    <p>تحليل برمجي وتصميم هندسي لتفكيك الدائرة المغلقة (Deadlock) بين إخفاء العنصر الأب والتحميل الكسول للصور.</p>
+  </header>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    
+    <!-- Content Column -->
+    <div class="content-column">
+      <article class="card">
+        
+        <!-- Introduction -->
+        <div class="alert-card note">
+          <span class="alert-icon">💡</span>
+          <div class="alert-content">
+            <strong>الفكرة الأساسية للمشكلة:</strong>
+            المشكلة ليست في رابط الصورة أو الخادم، بل تكمن في دائرة مغلقة (Deadlock) بين إخفاء الحاوية الأب (Wrapper) باستخدام <code>v-show</code>، وخاصية التحميل الكسول (Lazy Loading) للصورة، وانتظار حدث التحميل <code>@load</code>.
+          </div>
+        </div>
+
+        <p class="paragraph">
+          أهلاً بك يا إسلام 👌، سنقوم في هذا الشرح التفصيلي بتبسيط كل ما يحدث داخل المتصفح خطوة بخطوة، مع تسليط الضوء على تفاصيل الأكواد البرمجية ولماذا يُعتبر الحل المقترح حلاً جذرياً وهندسياً وليس مجرد التفاف عابر (Workaround).
+        </p>
+
+        <!-- Section 1 -->
+        <h1 class="section-title" id="problem-overview">المشكلة باختصار</h1>
+        <p class="paragraph">
+          لديك صورة معاينة (Preview) للـ Slide. من المفترض أن تظهر بمجرد توفر الرابط، ولكن بدلاً من ذلك، تظل الصفحة معلقة على رسالة:
+        </p>
+        
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">Terminal Loading State</span>
+          </div>
+          <pre class="code-block"><code class="token comment">⏳ Generating preview…</code></pre>
+        </div>
+
+        <p class="paragraph">
+          على الرغم من أن رابط الصورة صحيح تماماً والصورة متوفرة على الخادم. المشكلة الحقيقية تكمن في الدائرة المغلقة التي صنعها منطق الكود:
+        </p>
+
+        <ul class="stylish-list">
+          <li><strong>الشرط الأول:</strong> الصورة تنتظر ظهورها لتتحمل (بسبب خاصية Lazy Loading).</li>
+          <li><strong>الشرط الثاني:</strong> الحاوية الأب تنتظر تحميل الصورة لتظهرها (بسبب الشرط المعتمد على <code>isLoading</code>).</li>
+        </ul>
+
+        <!-- Senior Insight 1 -->
+        <div class="senior-card">
+          <div class="senior-header">
+            <div class="senior-avatar">🧑‍💻</div>
+            <div class="senior-title-text">تبسيط سينيور</div>
+          </div>
+          <div class="senior-body">
+            تخيل أنك تطرق باباً، وتقول للشخص خلف الباب: <strong>"لن أفتح لك الباب حتى تدخل أولاً!"</strong>
+            ويرد عليك الآخر: <strong>"وكيف أدخل والباب مغلق؟!"</strong>
+            هذا هو التفسير الدقيق للدائرة المغلقة (Deadlock) التي دخل فيها المتصفح.
+          </div>
+        </div>
+
+        <!-- Diagram section -->
+        <h2 class="section-title" id="deadlock-cycle">الرسم التوضيحي للدائرة المغلقة</h2>
+        <div class="deadlock-visualizer-container">
+          <div class="deadlock-visualizer-title">🔄 دورة المأزق البرمجي (Infinite Deadlock Loop)</div>
+          <svg class="deadlock-svg" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+              </marker>
+            </defs>
+            
+            <!-- Nodes -->
+            <rect x="110" y="20" width="180" height="50" rx="10" class="deadlock-node critical"/>
+            <text x="200" y="50" text-anchor="middle" class="deadlock-node-text" fill="#ef4444">isLoading = true (افتراضي)</text>
+            
+            <rect x="250" y="150" width="140" height="50" rx="10" class="deadlock-node"/>
+            <text x="320" y="180" text-anchor="middle" class="deadlock-node-text">الحاوية مخفية (v-show)</text>
+            
+            <rect x="110" y="300" width="180" height="50" rx="10" class="deadlock-node"/>
+            <text x="200" y="330" text-anchor="middle" class="deadlock-node-text">المتصفح لا يحمل الصورة</text>
+            
+            <rect x="10" y="150" width="130" height="50" rx="10" class="deadlock-node"/>
+            <text x="75" y="180" text-anchor="middle" class="deadlock-node-text">حدث @load لا يعمل</text>
+
+            <!-- Arrows -->
+            <path d="M 200 70 L 290 150" class="deadlock-arrow active"/>
+            <path d="M 320 200 L 260 300" class="deadlock-arrow active"/>
+            <path d="M 200 300 L 100 200" class="deadlock-arrow active"/>
+            <path d="M 75 150 L 150 70" class="deadlock-arrow active"/>
+            
+            <circle cx="200" cy="200" r="30" fill="rgba(239, 68, 68, 0.1)" stroke="#ef4444" stroke-width="2"/>
+            <text x="200" y="205" text-anchor="middle" font-weight="bold" fill="#ef4444" font-size="14">🔒</text>
+          </svg>
+          <p class="paragraph" style="margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);">
+            تتحرك البيانات في هذه الدورة المغلقة دون أي حدث يكسر الحلقة المفرغة.
+          </p>
+        </div>
+
+        <!-- Section 2 -->
+        <h1 class="section-title" id="buggy-code">الكود المسبب للمشكلة</h1>
+        <p class="paragraph">هذا هو الكود المسبب للمشكلة والمكتوب حالياً:</p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">Vue Template (Buggy)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-buggy')">نسخ الكود</button>
+          </div>
+          <pre class="code-block" id="code-buggy"><code><span class="token tag">&lt;div</span>
+  <span class="token attr-name">v-show</span>=<span class="token attr-value">"!isLoading &amp;&amp; !hasError"</span>
+  <span class="token attr-name">class</span>=<span class="token attr-value">"slide-card__image-wrapper"</span>
+<span class="token tag">&gt;</span>
+  <span class="token tag">&lt;img</span>
+    <span class="token attr-name">v-if</span>=<span class="token attr-value">"shouldRenderPreview"</span>
+    <span class="token attr-name">:loading</span>=<span class="token attr-value">"imageFetchPriority === 'high' ? 'eager' : 'lazy'"</span>
+    <span class="token attr-name">@load</span>=<span class="token attr-value">"onImageLoad"</span>
+  <span class="token tag">&gt;</span>
+<span class="token tag">&lt;/div&gt;</span></code></pre>
+        </div>
+
+        <!-- Section 3 -->
+        <h1 class="section-title" id="detailed-explanation">شرح تفصيلي للكود المسبب للمشكلة</h1>
+        
+        <h3 class="section-title">1. وسم الحاوية والأب</h3>
+        <p class="paragraph">
+          يبدأ الكود بإنشاء وسم <code class="inline-code">&lt;div&gt;</code> وهو الصندوق أو الإطار (Wrapper) الحاضن للصورة. وظيفته التحكم بمساحة وأبعاد العرض في الصفحة.
+        </p>
+
+        <h3 class="section-title">2. شرط العرض <code>v-show="!isLoading &amp;&amp; !hasError"</code></h3>
+        <p class="paragraph">
+          هذا السطر هو بؤرة المشكلة. موجه <code class="inline-code">v-show</code> في Vue يقوم بإخفاء العنصر بصرياً عن طريق إضافة فئة التنسيق <code class="inline-code">display: none;</code> عندما يكون الشرط خاطئاً (false).
+        </p>
+        
+        <ul class="stylish-list">
+          <li>المتغير <code class="inline-code">isLoading</code>: يعبر عن حالة تحميل الصورة، وقيمته الافتراضية تكون <code class="inline-code">true</code>.</li>
+          <li>المتغير <code class="inline-code">hasError</code>: يعبر عن حدوث خطأ، وقيمته الافتراضية تكون <code class="inline-code">false</code>.</li>
+          <li>باستخدام معامل النفي <code class="inline-code">!</code>، تصبح قيمة <code class="inline-code">!isLoading</code> هي <code class="inline-code">false</code>.</li>
+          <li>الربط بالمعامل المنطقي <code class="inline-code">&amp;&amp;</code> يشترط تحقق كلا الطرفين. وحيث أن الطرف الأول <code class="inline-code">false</code>، فإن النتيجة النهائية للشرط تكون <code class="inline-code">false</code>. وبالتالي، يتم إخفاء الإطار الحاضن بالكامل.</li>
+        </ul>
+
+        <div class="senior-card">
+          <div class="senior-header">
+            <div class="senior-avatar">🧑‍💻</div>
+            <div class="senior-title-text">تبسيط سينيور</div>
+          </div>
+          <div class="senior-body">
+            الـ <code>v-show</code> في Vue لا تحذف العنصر من هيكلية الـ DOM بل تبقيه موجوداً وتخفيه بأسلوب CSS. هذا يعني أن الصورة داخل الـ div موجودة تقنياً في الصفحة لكن المتصفح يعلم أنها مخفية ولن تُعرض للمستخدم حالياً.
+          </div>
+        </div>
+
+        <h3 class="section-title">3. وسم الصورة الداخلي <code>&lt;img v-if="shouldRenderPreview"&gt;</code></h3>
+        <p class="paragraph">
+          يتحكم موجه <code class="inline-code">v-if</code> بإضافة الصورة للـ DOM أو حذفها تماماً. والفرق هنا أن <code class="inline-code">v-if</code> يقوم بعملية إنشاء فعلية للعنصر.
+        </p>
+
+        <h3 class="section-title">4. خاصية التحميل الكسول <code>:loading="..."</code></h3>
+        <p class="paragraph">
+          يعتمد الكود على شرط ثلاثي لتحديد طريقة التحميل:
+        </p>
+        <div class="code-container">
+          <pre class="code-block"><code class="token keyword">imageFetchPriority === 'high' ? 'eager' : 'lazy'</code></pre>
+        </div>
+        <p class="paragraph">
+          إذا لم تكن الأولوية عالية، يوجه الكود المتصفح لاستخدام التحميل الكسول <code class="inline-code">lazy</code>.
+        </p>
+        
+        <div class="alert-card warning">
+          <span class="alert-icon">⚠️</span>
+          <div class="alert-content">
+            <strong>مكمن الخلل في التحميل الكسول:</strong>
+            عندما يرى المتصفح صورة تحمل خاصية <code>loading="lazy"</code> وهي موجودة داخل عنصر أب مخفي تماماً بـ <code>display: none;</code>، فإنه يتخذ قراراً ذكياً بتأجيل تحميل الصورة وتوفير موارد الشبكة (لأن المستخدم لا يراها). هذا القرار الذكي هو ما يسبب لنا المشكلة هنا.
+          </div>
+        </div>
+
+        <h3 class="section-title">5. جرس التحميل <code>@load="onImageLoad"</code></h3>
+        <p class="paragraph">
+          يقوم هذا الموجه بتسجيل مستمع لحدث اكتمال تحميل الصورة بنجاح. بمجرد تفعيله، يتم استدعاء الدالة <code class="inline-code">onImageLoad</code> التي تقوم بتغيير قيمة <code class="inline-code">isLoading</code> إلى <code class="inline-code">false</code>.
+        </p>
+        <p class="paragraph">
+          <strong>وهنا يكتمل المأزق:</strong> لن يتم إطلاق حدث التحميل لأن المتصفح لم يطلب الصورة أساساً بانتظار ظهورها، والصورة لن تظهر لأن الحاوية لن يزول عنها <code>display: none</code> إلا إذا أصبح <code class="inline-code">isLoading = false</code>.
+        </p>
+
+        <!-- Section 4 -->
+        <h1 class="section-title" id="proposed-solution">الحل الصحيح والهندسي</h1>
+        <p class="paragraph">
+          الحل الهندسي يكمن في <strong>فك هذا الارتباط</strong>. بدلاً من إخفاء الحاوية الأب تماماً أثناء التحميل، سنجعلها مرئية للمتصفح ليقوم بتحميل الصورة بشكل طبيعي، ونعرض بداخلها مؤشر تحميل (Skeleton Loader / Spinner) يعبر عن الحالة للمستخدم بصرياً.
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">Vue Template (Proposed)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-proposed')">نسخ الكود</button>
+          </div>
+          <pre class="code-block" id="code-proposed"><code><span class="token tag">&lt;div</span>
+  <span class="token attr-name">v-if</span>=<span class="token attr-value">"shouldRenderPreview &amp;&amp; !hasError"</span>
+  <span class="token attr-name">class</span>=<span class="token attr-value">"slide-card__image-wrapper"</span>
+  <span class="token attr-name">:class</span>=<span class="token attr-value">"{ 'slide-card__image-wrapper--loading': isLoading }"</span>
+<span class="token tag">&gt;</span>
+  <span class="token tag">&lt;img</span>
+    <span class="token attr-name">:src</span>=<span class="token attr-value">"previewImageUrl"</span>
+    <span class="token attr-name">class</span>=<span class="token attr-value">"slide-card__image"</span>
+    <span class="token attr-name">:class</span>=<span class="token attr-value">"{ 'slide-card__image--loading': isLoading }"</span>
+    <span class="token attr-name">@load</span>=<span class="token attr-value">"onImageLoad"</span>
+    <span class="token attr-name">@error</span>=<span class="token attr-value">"onImageError"</span>
+  <span class="token tag">/&gt;</span>
+<span class="token tag">&lt;/div&gt;</span></code></pre>
+        </div>
+
+        <!-- Section 5 -->
+        <h1 class="section-title" id="proposed-explanation">شرح تفصيلي للحل المقترح</h1>
+        
+        <h3 class="section-title">1. فك الارتباط عبر <code>v-if="shouldRenderPreview &amp;&amp; !hasError"</code></h3>
+        <p class="paragraph">
+          قمنا باستبدال <code class="inline-code">v-show</code> بـ <code class="inline-code">v-if</code> وربطه بمتغير المكون الأساسي <code class="inline-code">shouldRenderPreview</code>. هذا يعني أنه بمجرد أن يقرر المكون الحاجة لعرض المعاينة، سيتم إنشاء الحاوية فوراً وتكون ظاهرة في الـ DOM بدون <code>display: none;</code>، مما يسمح للمتصفح بالبدء الفوري في فحص الصورة وتحميلها.
+        </p>
+
+        <h3 class="section-title">2. الفئة الديناميكية <code>:class="{ 'slide-card__image-wrapper--loading': isLoading }"</code></h3>
+        <p class="paragraph">
+          بدل الإخفاء الكامل للحاوية، نقوم بإضافة فئة CSS تدل على حالة التحميل. يمكننا استخدام هذه الفئة لإظهار واجهة Skeleton مهدئة ومحفزة بصرياً للمستخدم.
+        </p>
+
+        <h3 class="section-title">3. تحميل فوري وتجنب التكرار <code>:src="previewImageUrl"</code></h3>
+        <p class="paragraph">
+          يتم تحميل الصورة بشكل طبيعي ومباشر. وحيث أن المكون نفسه يتحكم بالفعل بعملية التأجيل الكسول (Component-level Lazy Loading) باستخدام <code>IntersectionObserver</code>، فإنه لا داعي لإضافة طبقة تكرارية من تأجيل المتصفح بـ <code>loading="lazy"</code> داخل الوسم نفسه، وهو ما يسرع العملية.
+        </p>
+
+        <div class="senior-card">
+          <div class="senior-header">
+            <div class="senior-avatar">🧑‍💻</div>
+            <div class="senior-title-text">تبسيط سينيور</div>
+          </div>
+          <div class="senior-body">
+            عندما تمتلك بالفعل نظاماً برمجياً ذكياً يقوم بتحديد متى تظهر الصورة (على مستوى Vue)، فإن تفعيل خاصية الـ Lazy Loading المدمجة في المتصفح يسبب تعارضاً وتأخيراً لا داعي له. دع المتصفح يطلق الطلب بمجرد وضع الرابط.
+          </div>
+        </div>
+
+        <h3 class="section-title">4. التحكم في الشفافية بدل الوجود <code>opacity: 0</code></h3>
+        <p class="paragraph">
+          نقوم بإضافة فئة ديناميكية للصورة <code class="inline-code">slide-card__image--loading</code> عند التحميل تجعل الشفافية مساوية للصفر:
+        </p>
+        <div class="code-container">
+          <pre class="code-block"><code class="token comment">/* CSS */</span>
+<span class="token attr-name">.slide-card__image--loading</span> {
+  <span class="token keyword">opacity</span>: <span class="token number">0</span>;
+}</code></pre>
+        </div>
+        <p class="paragraph">
+          هذا الأسلوب يبقي عنصر الصورة متواجداً وبأبعاده الطبيعية في شاشة العرض لكي يحفز طلب التحميل، وبمجرد اكتمال التحميل يتحول الـ opacity إلى 1 تدريجياً ليعطي انطباعاً بصرياً فائق السلاسة والاحترافية.
+        </p>
+
+        <h3 class="section-title">5. التعامل مع الأخطاء <code>@error="onImageError"</code></h3>
+        <p class="paragraph">
+          أضفنا مستمعاً للأخطاء لضمان عدم تعليق الصفحة في حالة تعطل الخادم أو تعذر العثور على الصورة.
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">JavaScript (Composition API)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-js')">نسخ الكود</button>
+          </div>
+          <pre class="code-block" id="code-js"><code><span class="token keyword">const</span> <span class="token attr-name">isLoading</span> = <span class="token function">ref</span>(<span class="token boolean">true</span>);
+<span class="token keyword">const</span> <span class="token attr-name">hasError</span> = <span class="token function">ref</span>(<span class="token boolean">false</span>);
+
+<span class="token keyword">function</span> <span class="token function">onImageLoad</span>() {
+  <span class="token attr-name">isLoading</span>.<span class="token attr-name">value</span> = <span class="token boolean">false</span>;
+  <span class="token attr-name">hasError</span>.<span class="token attr-name">value</span> = <span class="token boolean">false</span>;
+}
+
+<span class="token keyword">function</span> <span class="token function">onImageError</span>() {
+  <span class="token attr-name">isLoading</span>.<span class="token attr-name">value</span> = <span class="token boolean">false</span>;
+  <span class="token attr-name">hasError</span>.<span class="token attr-name">value</span> = <span class="token boolean">true</span>;
+}</code></pre>
+        </div>
+
+        <!-- Section 6: Interactive Simulator -->
+        <h1 class="section-title" id="interactive-simulator">محاكاة تفاعلية للمشكلة والحل</h1>
+        <p class="paragraph">
+          يمكنك الآن اختبار وتجربة سلوك المتصفح في الحالتين بشكل تفاعلي وتتبع سجل الأحداث (Logs) المباشرة:
+        </p>
+
+        <div class="simulator-container">
+          <div class="sim-header">
+            <div class="sim-tabs">
+              <button class="sim-tab-btn active" onclick="switchTab(this, 'tab-deadlock')">1. سلوك المأزق (Deadlock)</button>
+              <button class="sim-tab-btn" onclick="switchTab(this, 'tab-working')">2. السلوك المقترح (Working)</button>
+            </div>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Simulator v1.0</span>
+          </div>
+
+          <!-- Tab 1: Deadlock -->
+          <div class="sim-body active" id="tab-deadlock">
+            <div class="sim-control-panel">
+              <p class="paragraph" style="font-size: 0.95rem;">
+                في هذا الوضع، تكون الحاوية مخفية تماماً بـ <code class="inline-code">display: none</code>، والصورة محددة بـ <code class="inline-code">lazy</code>. اضغط على الزر لمشاهدة المأزق.
+              </p>
+              <button class="sim-btn danger-btn" onclick="runDeadlockSimulation()">▶ تشغيل محاكاة المأزق</button>
+              <div class="sim-log" id="deadlock-log">
+                <span class="log-info">// بانتظار بدء المحاكاة...</span>
+              </div>
+            </div>
+            <div class="sim-preview-box" id="deadlock-wrapper" style="opacity: 0.5;">
+              <span class="preview-badge danger-badge">display: none (مخفي)</span>
+              <div class="spinner danger-spinner"></div>
+              <div style="font-size: 0.9rem; color: var(--danger); font-weight: bold;">Generating preview…</div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Working -->
+          <div class="sim-body" id="tab-working">
+            <div class="sim-control-panel">
+              <p class="paragraph" style="font-size: 0.95rem;">
+                هنا الحاوية ظاهرة تماماً في الـ DOM، ويتم استخدام Skeleton Loader وتأثير الشفافية الناعم. اضغط على الزر لمشاهدة سلاسة التحميل.
+              </p>
+              <button class="sim-btn" onclick="runWorkingSimulation()">▶ تشغيل محاكاة الحل</button>
+              <div class="sim-log" id="working-log">
+                <span class="log-info">// بانتظار بدء المحاكاة...</span>
+              </div>
+            </div>
+            <div class="sim-preview-box">
+              <span class="preview-badge success-badge">DOM: Visible</span>
+              
+              <!-- Simulated skeleton loader -->
+              <div class="skeleton-loader" id="working-skeleton">
+                <div class="spinner"></div>
+                <div class="skeleton-bar"></div>
+                <div class="skeleton-bar" style="width: 40%"></div>
+              </div>
+
+              <!-- Simulated image -->
+              <img id="working-img" class="sim-rendered-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='150' viewBox='0 0 300 150'><rect width='100%' height='100%' fill='%234f46e5'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ffffff' font-family='sans-serif' font-size='20' font-weight='bold'>تم تحميل الصورة بنجاح! 🎉</text></svg>" alt="Slide Preview Demo" />
+
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="working-progress"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 7: Difference Table -->
+        <h1 class="section-title" id="comparison">جدول المقارنة السريعة</h1>
+        <p class="paragraph">
+          جدول يوضح الفرق الجوهري بين المنهجين لترسيخ المفهوم:
+        </p>
+
+        <style>
+          .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+          }
+          .comparison-table th, .comparison-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            text-align: right;
+          }
+          .comparison-table th {
+            background-color: rgba(255, 255, 255, 0.02);
+            color: var(--text-headings);
+            font-weight: 800;
+          }
+          [data-theme="light"] .comparison-table th {
+            background-color: rgba(0, 0, 0, 0.02);
+          }
+          .status-bad { color: var(--danger); font-weight: bold; }
+          .status-good { color: var(--success); font-weight: bold; }
+        </style>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>الميزة</th>
+              <th>الكود الحالي (المأزق)</th>
+              <th>الحل المقترح (الهندسي)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>حالة الحاوية الأب (Wrapper)</td>
+              <td class="status-bad">مخفية بـ display: none أثناء التحميل</td>
+              <td class="status-good">ظاهرة تماماً في هيكلية الصفحة (DOM)</td>
+            </tr>
+            <tr>
+              <td>طلب الصورة من المتصفح</td>
+              <td class="status-bad">معلق ومؤجل (بسبب الإخفاء و loading="lazy")</td>
+              <td class="status-good">فوري ومباشر بمجرد توفر الرابط</td>
+            </tr>
+            <tr>
+              <td>واجهة المستخدم البصرية</td>
+              <td class="status-bad">توقف عند Generating preview للأبد</td>
+              <td class="status-good">هيكل تحميل متحرك (Skeleton) مريح للعين</td>
+            </tr>
+            <tr>
+              <td>معالجة الأخطاء (Error handling)</td>
+              <td class="status-bad">غير متوفرة (تسبب تعليق مؤشر التحميل)</td>
+              <td class="status-good">متوفرة وتوقف التحميل فوراً في حال الفشل</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Section 8: Why Console query is not a solution -->
+        <h1 class="section-title" id="console-code">لماذا لا نعتمد حل كود الـ Console؟</h1>
+        <p class="paragraph">
+          ربما لاحظت أن تشغيل كود جافاسكريبت التالي في كونسول المتصفح يقوم بإظهار الصور المعلقة:
+        </p>
+
+        <div class="code-container">
+          <div class="code-header">
+            <span class="code-lang">Console Hack (Temporary)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-console')">نسخ الكود</button>
+          </div>
+          <pre class="code-block" id="code-console"><code><span class="token comment">// إجبار الحاويات والصور على الظهور بصرياً</span>
+<span class="token attr-name">document</span>.<span class="token function">querySelectorAll</span>(<span class="token string">'img'</span>).<span class="token function">forEach</span>(<span class="token attr-name">img</span> <span class="token keyword">=&gt;</span> {
+  <span class="token attr-name">img</span>.<span class="token attr-name">style</span>.<span class="token attr-name">display</span> = <span class="token string">'block'</span>;
+  <span class="token keyword">if</span> (<span class="token attr-name">img</span>.<span class="token attr-name">parentElement</span>) {
+    <span class="token attr-name">img</span>.<span class="token attr-name">parentElement</span>.<span class="token attr-name">style</span>.<span class="token attr-name">display</span> = <span class="token string">'block'</span>;
+  }
+});</code></pre>
+        </div>
+
+        <p class="paragraph">
+          <strong>هذا الإجراء ليس حلاً هندسياً للأسباب الآتية:</strong>
+        </p>
+        <ul class="stylish-list">
+          <li>المستخدم العادي لن يقوم بفتح Console المتصفح وتمرير كود برمجي لتظهر الصور.</li>
+          <li>الكود يقوم بمعالجة العرض بشكل يدوي وقسري بعد حدوث المشكلة بدلاً من بناء منطق سليم للمكون.</li>
+          <li>المشكلة ستتكرر فوراً عند الانتقال لأي شريحة أخرى أو إعادة تحميل الصفحة.</li>
+        </ul>
+
+        <div class="senior-card">
+          <div class="senior-header">
+            <div class="senior-avatar">🧑‍💻</div>
+            <div class="senior-title-text">تبسيط سينيور</div>
+          </div>
+          <div class="senior-body">
+            الاعتماد على أكواد الـ Console لحل المشاكل الأساسية يشبه من يقوم بدفع السيارة بنفسه في كل مرة بدلاً من إصلاح محركها التالف. أصلح المنطق الداخلي للمحرك لتدور العجلات تلقائياً.
+          </div>
+        </div>
+
+        <!-- Section 9: Verification steps -->
+        <h1 class="section-title" id="verification">خطوات التحقق من نجاح الحل</h1>
+        <p class="paragraph">
+          بعد تطبيق التعديلات، يفضل فتح أدوات المطورين (DevTools) والتحقق من النقاط التالية:
+        </p>
+        <ul class="stylish-list">
+          <li><strong>التحقق من DOM:</strong> تأكد أن وسم الصورة متواجد بداخل الـ DOM ولا توجد قيمة <code>display: none</code> على العنصر الأب.</li>
+          <li><strong>فحص الشبكة (Network Tab):</strong> تأكد من صدور طلب الصورة فوراً بمجرد تفعيل المعاينة.</li>
+          <li><strong>اختبار الحدث:</strong> تأكد من طباعة جملة اكتمال التحميل عند انتهاء العملية واستدعاء الدالة.</li>
+        </ul>
+
+        <!-- Summary -->
+        <section class="alert-card summary" id="final-summary">
+          <span class="alert-icon">✨</span>
+          <div class="alert-content">
+            <strong>الخلاصة العملية وقاعدة المطور الذهبية:</strong>
+            لا تقم بإخفاء أي عنصر برمجياً بـ <code>display: none</code> طالما أنك تنتظر منه إطلاق حدث تحميل <code>load</code>. أبقِ العنصر متاحاً في الهيكلية العامة واستعن بالشفافية <code>opacity</code> أو الهياكل التقديرية (Skeletons) لتوفير واجهة مستخدم ناعمة واحترافية.
+          </div>
+        </section>
+
+      </article>
+      
+      <footer>
+        تمت إعادة تصميم وتنسيق الملف التعليمي وتحويله إلى صيغة تفاعلية مطورة.
+      </footer>
+    </div>
+    
+    <!-- Sidebar Column -->
+    <div class="sidebar-column">
+      <div class="toc-card">
+        <div class="toc-title">محتويات الصفحة</div>
+        <ul class="toc-list">
+          <li><a href="#problem-overview" class="toc-link active">المشكلة باختصار</a></li>
+          <li><a href="#deadlock-cycle" class="toc-link">مخطط الدائرة المغلقة</a></li>
+          <li><a href="#buggy-code" class="toc-link">الكود المسبب للمشكلة</a></li>
+          <li><a href="#detailed-explanation" class="toc-link">شرح الكود الحالي</a></li>
+          <li><a href="#proposed-solution" class="toc-link">الحل المقترح</a></li>
+          <li><a href="#proposed-explanation" class="toc-link">شرح الحل وتطبيقه</a></li>
+          <li><a href="#interactive-simulator" class="toc-link">محاكاة تفاعلية</a></li>
+          <li><a href="#comparison" class="toc-link">مقارنة المنهجين</a></li>
+          <li><a href="#console-code" class="toc-link">حل الـ Console المؤقت</a></li>
+          <li><a href="#verification" class="toc-link">خطوات التحقق</a></li>
+          <li><a href="#final-summary" class="toc-link">الخلاصة العملية</a></li>
+        </ul>
+      </div>
+    </div>
+    
+  </div>
+
+  <script>
+    // Theme Switcher Logic
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('theme-icon');
+      if (!icon) return;
+      if (theme === 'light') {
+        icon.innerHTML = `<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      } else {
+        icon.innerHTML = `<path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
+    }
+
+    // Tab Switcher for Simulator
+    function switchTab(btn, tabId) {
+      // Deactivate all tabs
+      document.querySelectorAll('.sim-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.sim-body').forEach(b => b.classList.remove('active'));
+      
+      // Activate target tab
+      btn.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // Deadlock Simulator Logic
+    let deadlockInterval;
+    function runDeadlockSimulation() {
+      const log = document.getElementById('deadlock-log');
+      log.innerHTML = '';
+      clearInterval(deadlockInterval);
+      
+      log.innerHTML += '<div class="log-info">⏳ [نظام المحاكاة]: بدء محاكاة التحميل...</div>';
+      log.innerHTML += '<div class="log-info">⚙️ الحالة: isLoading = true</div>';
+      
+      setTimeout(() => {
+        log.innerHTML += '<div class="log-warning">⚠️ بما أن isLoading = true، فإن !isLoading == false. الـ wrapper مُخفي بـ (display: none).</div>';
+        log.scrollTop = log.scrollHeight;
+      }, 800);
+      
+      setTimeout(() => {
+        log.innerHTML += '<div class="log-danger">🛑 المتصفح يلاحظ أن الحاوية مخفية، ولأن خاصية loading="lazy" نشطة، فلن يتم إرسال طلب الصورة ووفر الموارد.</div>';
+        log.scrollTop = log.scrollHeight;
+      }, 1600);
+
+      let counter = 1;
+      deadlockInterval = setInterval(() => {
+        log.innerHTML += `<div class="log-danger">⏳ مضت ${counter * 2} ثوانٍ... التحميل معلق... حدث @load لم يُطلق...</div>`;
+        log.scrollTop = log.scrollHeight;
+        counter++;
+        if (counter > 4) {
+          clearInterval(deadlockInterval);
+          log.innerHTML += '<div class="log-critical">🚨 طريق مسدود (Deadlock)! تم إيقاف المحاكاة تلقائياً. لن يتم تحميل المعاينة أبدًا في هذا الوضع.</div>';
+          log.scrollTop = log.scrollHeight;
+        }
+      }, 2400);
+    }
+
+    // Working Simulator Logic
+    let workingTimeout;
+    function runWorkingSimulation() {
+      const log = document.getElementById('working-log');
+      const progressFill = document.getElementById('working-progress');
+      const skeleton = document.getElementById('working-skeleton');
+      const img = document.getElementById('working-img');
+      
+      // Reset state
+      log.innerHTML = '';
+      progressFill.style.width = '0%';
+      skeleton.style.display = 'flex';
+      img.classList.remove('loaded');
+      clearTimeout(workingTimeout);
+      
+      log.innerHTML += '<div class="log-info">⏳ [نظام المحاكاة]: بدء تحميل الحل المقترح...</div>';
+      log.innerHTML += '<div class="log-info">⚙️ الحالة: shouldRenderPreview = true. الـ wrapper متواجد في الصفحة بصرياً.</div>';
+      log.innerHTML += '<div class="log-info">🎨 تم تطبيق فئة slide-card__image-wrapper--loading لعرض هيكل التحميل التقديري.</div>';
+      log.scrollTop = log.scrollHeight;
+
+      let progress = 0;
+      function simulateProgress() {
+        progress += 25;
+        progressFill.style.width = `${progress}%`;
+        log.innerHTML += `<div class="log-info">📥 جاري طلب البيانات من الخادم... تم تنزيل ${progress}%</div>`;
+        log.scrollTop = log.scrollHeight;
+        
+        if (progress < 100) {
+          workingTimeout = setTimeout(simulateProgress, 500);
+        } else {
+          log.innerHTML += '<div class="log-success">✅ اكتمل تحميل ملف الصورة! أطلق المتصفح حدث @load بنجاح.</div>';
+          log.innerHTML += '<div class="log-success">⚙️ استدعاء دالة نجاح التحميل: تم تعيين isLoading = false.</div>';
+          
+          workingTimeout = setTimeout(() => {
+            skeleton.style.display = 'none';
+            img.classList.add('loaded');
+            log.innerHTML += '<div class="log-success">✨ ظهرت الصورة الآن بسلاسة وهدوء (opacity: 1).</div>';
+            log.scrollTop = log.scrollHeight;
+          }, 600);
+        }
+      }
+      
+      workingTimeout = setTimeout(simulateProgress, 800);
+    }
+
+    // Copy Code Logic
+    function copyCode(btn, targetId) {
+      const codeElement = document.getElementById(targetId);
+      if (!codeElement) return;
+      const text = codeElement.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = '✨ تم النسخ!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+
+    // Reading Progress & Scrollspy active class on sidebar links
+    window.addEventListener('scroll', () => {
+      // 1. Update Reading Progress Bar
+      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = (winScroll / height) * 100;
+      document.getElementById('reading-progress').style.width = scrolled + '%';
+
+      // 2. ScrollSpy highlight table of contents
+      const sections = document.querySelectorAll('article h1.section-title, article h2.section-title, article section.alert-card');
+      let currentActiveId = "";
+      
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.offsetHeight;
+        // Check if user scrolled past the section start with offset
+        if (window.scrollY >= (sectionTop - 150)) {
+          currentActiveId = section.getAttribute('id');
+        }
+      });
+
+      if (currentActiveId) {
+        document.querySelectorAll('.toc-link').forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === `#${currentActiveId}`) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+
+    // Run setup on load
+    initTheme();
+  </script>
+</body>
+</html>
