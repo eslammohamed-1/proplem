@@ -5,66 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>دفتر المشاكل التقنية والحلول</title>
   
-  <!-- Google Fonts: Tajawal & JetBrains Mono -->
+  <!-- Google Fonts: Cairo & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   
   <style>
     /* CSS Reset & Design System */
     :root {
-      /* Dark Theme (Default) */
-      --bg-main: #080c14;
-      --bg-card: #0f172a;
-      --bg-card-hover: #1e293b;
-      --bg-input: #1e293b;
-      --border-color: #1e293b;
+      /* java-spilet Theme */
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-card-hover: rgba(30, 41, 59, 0.9);
+      --bg-input: rgba(15, 23, 42, 0.8);
+      --border-color: rgba(255, 255, 255, 0.1);
       --text-primary: #f8fafc;
-      --text-muted: #94a3b8;
+      --text-muted: #cbd5e1;
       --text-headings: #ffffff;
       
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --primary-glow: rgba(99, 102, 241, 0.15);
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --primary-glow: rgba(56, 189, 248, 0.15);
       
-      --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.15);
+      --success: #34d399;
+      --success-glow: rgba(52, 211, 153, 0.15);
       
-      --warning: #f59e0b;
-      --warning-glow: rgba(245, 158, 11, 0.15);
+      --warning: #fbbf24;
+      --warning-glow: rgba(251, 191, 36, 0.15);
       
-      --danger: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.15);
+      --danger: #f87171;
+      --danger-glow: rgba(248, 113, 113, 0.15);
 
-      --font-sans: 'Tajawal', sans-serif;
+      --font-sans: 'Cairo', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
       --transition-speed: 0.3s;
     }
 
-    [data-theme="light"] {
-      /* Light Theme */
-      --bg-main: #f8fafc;
-      --bg-card: #ffffff;
-      --bg-card-hover: #f1f5f9;
-      --bg-input: #ffffff;
-      --border-color: #e2e8f0;
-      --text-primary: #334155;
-      --text-muted: #64748b;
-      --text-headings: #0f172a;
-      
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --primary-glow: rgba(79, 70, 229, 0.08);
-      
-      --success: #059669;
-      --success-glow: rgba(5, 150, 105, 0.08);
-      
-      --warning: #d97706;
-      --warning-glow: rgba(217, 119, 6, 0.08);
-      
-      --danger: #dc2626;
-      --danger-glow: rgba(220, 38, 38, 0.08);
-    }
+
 
     * {
       box-sizing: border-box;
@@ -81,6 +58,9 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
     }
 
     /* Custom Scrollbar */
@@ -116,9 +96,7 @@
       transition: background-color var(--transition-speed), border-color var(--transition-speed);
     }
 
-    [data-theme="light"] .navbar {
-      background: rgba(255, 255, 255, 0.75);
-    }
+
 
     .navbar-brand {
       font-size: 1.3rem;
@@ -712,22 +690,20 @@
     </a>
     
     <div class="navbar-actions">
+      <a href="data/index.html" class="btn btn-secondary">
+        <svg style="width:20px; height:20px; fill:currentColor;" viewBox="0 0 20 20">
+          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+          <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+        </svg>
+        أدلة Docker
+      </a>
       <a href="git-pro.html" class="btn btn-secondary">
         <svg style="width:20px; height:20px; fill:currentColor;" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
         </svg>
         مرجع Git
       </a>
-      <button class="theme-toggle" id="themeToggle" aria-label="تبديل المظهر">
-        <!-- Sun Icon -->
-        <svg class="sun-icon" style="display:none; width:20px; height:20px; fill:currentColor;" viewBox="0 0 20 20">
-          <path d="M10 15a5 5 0 100-10 5 5 0 000 10zm0-13a1 1 0 100 2V1a1 1 0 100 2zm0 14a1 1 0 100 2v-2a1 1 0 100 2zM4.22 4.22a1 1 0 001.42 0l1.41-1.41a1 1 0 00-1.42-1.42L4.22 4.22zm11.56 11.56a1 1 0 001.42 0l1.41-1.41a1 1 0 00-1.42-1.42l-1.41 1.41zM1 10a1 1 0 102 0H1zm14 0a1 1 0 102 0h-2zM4.22 15.78l1.41-1.41a1 1 0 00-1.42-1.42l-1.41 1.41a1 1 0 001.42 1.42zm11.56-11.56l1.41-1.41a1 1 0 00-1.42-1.42l-1.41 1.41a1 1 0 001.42 1.42z"/>
-        </svg>
-        <!-- Moon Icon -->
-        <svg class="moon-icon" style="width:20px; height:20px; fill:currentColor;" viewBox="0 0 20 20">
-          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-        </svg>
-      </button>
+
       <button class="btn" id="openAddModalBtn">
         <svg style="width:20px; height:20px; fill:currentColor;" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
@@ -903,9 +879,6 @@
 
     // DOM Elements
     const body = document.body;
-    const themeToggle = document.getElementById('themeToggle');
-    const sunIcon = themeToggle.querySelector('.sun-icon');
-    const moonIcon = themeToggle.querySelector('.moon-icon');
     const problemsGrid = document.getElementById('problemsGrid');
     const searchInput = document.getElementById('searchInput');
     const filtersContainer = document.getElementById('filtersContainer');
@@ -934,8 +907,7 @@
     // Initialize Page
     function init() {
       // 1. Theme Configuration
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      setTheme(savedTheme);
+      body.removeAttribute('data-theme');
 
       // 2. Load Data from LocalStorage
       const savedProblems = localStorage.getItem('logged_problems');
@@ -952,7 +924,6 @@
       renderProblems();
 
       // 4. Attach Event Listeners
-      themeToggle.addEventListener('click', toggleTheme);
       searchInput.addEventListener('input', handleSearch);
       openAddModalBtn.addEventListener('click', () => openModal());
       closeModalBtn.addEventListener('click', closeModal);
@@ -965,23 +936,6 @@
       });
     }
 
-    // Theme Helpers
-    function setTheme(theme) {
-      currentTheme = theme;
-      body.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-      if (theme === 'light') {
-        sunIcon.style.display = 'none';
-        moonIcon.style.display = 'block';
-      } else {
-        sunIcon.style.display = 'block';
-        moonIcon.style.display = 'none';
-      }
-    }
-
-    function toggleTheme() {
-      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
-    }
 
     // LocalStorage Helpers
     function saveToLocalStorage() {

@@ -6,13 +6,13 @@
 <title>Git Multi Accounts — مرجع سينيور</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-    --bg: #0a0f1a;
-    --surface: #111827;
-    --surface-2: #1a2332;
-    --border: #1e293b;
+    --bg: #0f172a;
+    --surface: rgba(30, 41, 59, 0.7);
+    --surface-2: rgba(30, 41, 59, 0.9);
+    --border: rgba(255, 255, 255, 0.1);
     --accent: #38bdf8;
     --accent-dim: rgba(56, 189, 248, 0.12);
     --green: #34d399;
@@ -20,8 +20,8 @@
     --yellow: #fbbf24;
     --red: #f87171;
     --red-bg: rgba(127, 29, 29, 0.35);
-    --text: #e2e8f0;
-    --muted: #94a3b8;
+    --text: #f8fafc;
+    --muted: #cbd5e1;
     --radius: 14px;
     --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
@@ -31,11 +31,12 @@
 html { scroll-behavior: smooth; }
 
 body {
-    font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+    font-family: "Cairo", system-ui, sans-serif;
     background: var(--bg);
     background-image:
-        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.08), transparent),
-        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(52, 211, 153, 0.05), transparent);
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(52, 211, 153, 0.15), transparent);
+    background-attachment: fixed;
     color: var(--text);
     line-height: 1.85;
     margin: 0;
@@ -55,6 +56,7 @@ body {
     padding: 2.5rem 1.5rem;
     margin-bottom: 2rem;
     background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+    backdrop-filter: blur(10px);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -92,6 +94,7 @@ body {
 /* ── TOC ── */
 .toc {
     background: var(--surface);
+    backdrop-filter: blur(10px);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 1.25rem 1.5rem;
@@ -164,6 +167,7 @@ h3 {
 /* ── Cards ── */
 .box {
     background: var(--surface);
+    backdrop-filter: blur(10px);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 1.35rem 1.5rem;

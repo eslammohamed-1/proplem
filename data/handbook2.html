@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Handbook 2 — Docker DNS & Network Debugging</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-code: #0b0f19;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-headings: #ffffff;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --font-family-sans: 'Cairo', sans-serif;
+      --font-family-mono: 'JetBrains Mono', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-family-sans);
+      line-height: 1.8;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 40px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    h1, h2, h3, h4, h5, h6 { color: var(--text-headings); margin-top: 2rem; margin-bottom: 1rem; font-weight: 800; }
+    h1 { font-size: 2.2rem; color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+    h2 { font-size: 1.8rem; }
+    h3 { font-size: 1.4rem; color: var(--success); }
+    p { margin-bottom: 1.2rem; font-size: 1.1rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul, ol { margin-bottom: 1.5rem; padding-right: 2rem; }
+    li { margin-bottom: 0.5rem; font-size: 1.1rem; }
+
+    /* Professional Code Formatting */
+    pre {
+      background: var(--bg-code) !important;
+      border: 1px solid var(--border-color) !important;
+      border-left: 4px solid var(--success) !important;
+      border-radius: 12px !important;
+      padding: 20px !important;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      direction: ltr !important;
+      text-align: left !important;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    pre code {
+      font-family: var(--font-family-mono) !important;
+      font-size: 1rem !important;
+      color: var(--text-primary) !important;
+      display: block;
+      line-height: 1.6;
+    }
+    p code, li code {
+      background: rgba(255, 255, 255, 0.1);
+      font-family: var(--font-family-mono);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--warning);
+      font-size: 0.95rem;
+      direction: ltr;
+      display: inline-block;
+    }
+    hr { border: none; border-top: 1px solid var(--border-color); margin: 2.5rem 0; }
+    blockquote {
+      background: rgba(56, 189, 248, 0.05);
+      border-right: 4px solid var(--primary);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 10px 10px 0;
+      font-size: 1.15rem;
+    }
+    .nav-links {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);
+      flex-wrap: wrap; gap: 15px;
+    }
+    .btn { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: bold; transition: all 0.3s; text-align: center; }
+    .btn.btn-secondary { background: transparent; border: 1px solid var(--border-color); }
+    .btn:hover { background: var(--primary-hover); text-decoration: none; transform: translateY(-2px); }
+    img { max-width: 100%; border-radius: 10px; }
+  </style>
+  <!-- Prism.js for syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <h1><strong>Handbook 2 — Docker DNS &amp; Network Debugging</strong></h1>
+<h2><strong>تشخيص مشاكل الشبكة و DNS داخل Docker خطوة بخطوة</strong></h2>
+<p>يا إسلام، ده <strong>الهاند بوك التاني كامل</strong> من السلسلة، وده مبني على المشكلة الحقيقية اللي حصلت معاك:</p>
+<p>في البداية كان Docker بيقع عند:</p>
+<pre><code class="language-text">Temporary failure resolving &#39;deb.debian.org&#39;
+</code></pre>
+<p>وبعدين بعد ما حلّينا DNS ظهر نوع تاني من المشاكل:</p>
+<pre><code class="language-text">Unable to connect to deb.debian.org:http
+</code></pre>
+<p>وده مهم جدًا لأن الاتنين شكلهم قريب، لكن معناهم مختلف تمامًا.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الأول: تشخيص المشكلة خطوة بخطوة</h1>
+</div>
+<h1><strong>0. هدف الهاند بوك</strong></h1>
+
+<p>بعد الهاند بوك ده المفروض تبقى قادر تعمل الآتي:</p>
+<ul>
+<li>تفهم يعني إيه DNS.  </li>
+<li>تعرف الفرق بين:  <ul>
+<li>الإنترنت شغال.  </li>
+<li>DNS شغال.  </li>
+<li>HTTP/HTTPS شغال.</li>
+</ul>
+</li>
+<li>تشخص مشاكل Docker network بنفسك.  </li>
+<li>تستخدم أوامر:</li>
+</ul>
+<pre><code class="language-text">   nslookup  
+  ping  
+  cat /etc/resolv.conf  
+  scutil --dns  
+  apt-get update  
+  curl  
+  nc  
+</code></pre>
+<ul>
+<li>تعرف إمتى المشكلة من Docker.  </li>
+<li>إمتى من DNS.  </li>
+<li>إمتى من mirror أو HTTP.  </li>
+<li>إمتى من Dockerfile.  </li>
+<li>وتعرف ليه <code>pyenv</code> ملوش علاقة بمشكلة Docker network.</li>
+</ul>
+<hr>
+<h1><strong>1. المشكلة اللي حصلت معاك باختصار</strong></h1>
+
+<p>أنت شغلت:</p>
+<pre><code class="language-bash">docker compose up --build
+</code></pre>
+<p>والـ backend وقع عند:</p>
+<pre><code class="language-text">Temporary failure resolving &#39;deb.debian.org&#39;  
+</code></pre>
+<p>بعدها جربنا:</p>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<p>وطلع:</p>
+<pre><code class="language-text">;; connection timed out; no servers could be reached
+</code></pre>
+<p>بعد كده جربنا:</p>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8
+</code></pre>
+<p>وطلع إن الـ ping شغال.</p>
+<p>ده كان معناه:</p>
+<p>Docker عنده Internet بالـ IP<br>لكن DNS مش شغال</p>
+<p>بعدها لقينا إن جهازك بيستخدم DNS داخلي:</p>
+<pre><code class="language-text">172.23.100.226  
+172.23.100.225
+</code></pre>
+<p>لكن Docker كان متجبر يستخدم:</p>
+<pre><code class="language-text">8.8.8.8  
+8.8.4.4
+</code></pre>
+<p>ولما خلينا Docker يستخدم DNS بتاع جهازك، المشكلة اتحلت.</p>
+<hr>
+<h1><strong>24. تطبيق مباشر على مشكلتك</strong></h1>
+
+<h2><strong>المرحلة الأولى</strong></h2>
+<p>كان عندك:</p>
+<pre><code class="language-text">Temporary failure resolving &#39;deb.debian.org&#39;
+</code></pre>
+<p>اختبرنا:</p>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<p>فشل.</p>
+<p>اختبرنا:</p>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8
+</code></pre>
+<p>نجح.</p>
+<p>إذن:</p>
+<p>DNS فقط هو المشكلة</p>
+<hr>
+<h2><strong>المرحلة الثانية</strong></h2>
+<p>لقينا:</p>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf
+</code></pre>
+<p>يعرض:</p>
+<pre><code class="language-text">8.8.8.8  
+8.8.4.4
+</code></pre>
+<p>لكن macOS يعرض:</p>
+<pre><code class="language-text">172.23.100.226  
+172.23.100.225
+</code></pre>
+<p>جربنا:</p>
+<pre><code class="language-bash">docker run --rm --dns 172.23.100.226 busybox nslookup deb.debian.org
+</code></pre>
+<p>نجح.</p>
+<p>إذن:</p>
+<p>Docker لازم يستخدم DNS بتاع الجهاز</p>
+<hr>
+<h2><strong>المرحلة الثالثة</strong></h2>
+<p>عدلنا Docker Engine DNS.</p>
+<p>بعدها:</p>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>نجح.</p>
+<p>إذن:</p>
+<p>DNS اتحل رسميًا</p>
+<hr>
+<h2><strong>المرحلة الرابعة</strong></h2>
+<p>ظهر:</p>
+<pre><code class="language-text">Unable to connect to deb.debian.org:http
+</code></pre>
+<p>ده كان HTTP timeout.</p>
+<p>فعدّلنا Dockerfile يستخدم HTTPS وزودنا retries.</p>
+<p>وبالفعل build نجح.</p>
+<hr>
+<h1><strong>29. خلاصة مشكلتك في سطر واحد</strong></h1>
+
+<p>المشكلة بدأت بـ:</p>
+<pre><code class="language-text">Docker DNS misconfiguration
+</code></pre>
+<p>ثم بعد إصلاح DNS ظهرت:</p>
+<pre><code class="language-text">Slow/unstable Debian repository access over HTTP
+</code></pre>
+<p>والحل كان:</p>
+<pre><code class="language-text">Use correct internal DNS + switch apt sources to HTTPS + increase apt retries/timeouts
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثاني: مفاهيم أساسية في الشبكات (Network & DNS)</h1>
+</div>
+<h1><strong>2. يعني إيه DNS؟</strong></h1>
+
+<p>DNS اختصار:</p>
+<pre><code class="language-text">Domain Name System
+</code></pre>
+<p>وظيفته يحوّل اسم الموقع إلى IP.</p>
+<p>مثلاً لما تكتب:</p>
+<pre><code class="language-text">deb.debian.org
+</code></pre>
+<p>الجهاز لازم يعرف الـ IP الحقيقي بتاعه، مثلًا:</p>
+<pre><code class="language-text">199.232.186.132
+</code></pre>
+<p>فـ DNS بيعمل العملية دي:</p>
+<pre><code class="language-text">deb.debian.org  ---&gt;  199.232.186.132
+</code></pre>
+<hr>
+<h2><strong>ليه ده مهم؟</strong></h2>
+<p>لأن البرامج غالبًا بتتعامل مع أسماء مواقع مش IPs.</p>
+<p>مثلاً:</p>
+<pre><code class="language-text">apt-get update
+</code></pre>
+<p>بيحاول يدخل على:</p>
+<pre><code class="language-text">http://deb.debian.org/debian
+</code></pre>
+<p>لكن قبل ما يدخل، لازم يعرف:</p>
+<pre><code class="language-text">deb.debian.org
+</code></pre>
+<p>ده عنوانه IP إيه.</p>
+<p>لو DNS فشل، الاتصال كله يفشل من الأول.</p>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>تخيل إنك عايز تروح مكان اسمه:</p>
+<pre><code class="language-text">Debian Repository
+</code></pre>
+<p>بس معاك الاسم مش العنوان.</p>
+<p>DNS هو الدليل اللي يقولك:</p>
+<p>المكان ده عنوانه كذا.</p>
+<p>لو الدليل مش شغال، مش هتعرف تروح حتى لو الطريق نفسه مفتوح.</p>
+<hr>
+<h1><strong>3. الفرق بين Internet و DNS و HTTP</strong></h1>
+
+<p>دي أهم نقطة في الهاند بوك.</p>
+<h2><strong>3.1 Internet/IP Connectivity</strong></h2>
+<p>يعني الـ container يقدر يوصل لـ IP مباشر.</p>
+<p>اختباره:</p>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8
+</code></pre>
+<p>لو اشتغل، يبقى عندك اتصال IP.</p>
+<p>مثال ناجح:</p>
+<pre><code class="language-text">64 bytes from 8.8.8.8  
+0% packet loss
+</code></pre>
+<p>ده معناه:</p>
+<p>الإنترنت الأساسي شغال</p>
+<p>لكن لا يعني إن DNS شغال.</p>
+<hr>
+<h2><strong>3.2 DNS Connectivity</strong></h2>
+<p>يعني الـ container يقدر يحوّل اسم domain إلى IP.</p>
+<p>اختباره:</p>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<p>لو اشتغل، تشوف حاجة زي:</p>
+<pre><code class="language-text">Name:   debian.map.fastlydns.net  
+Address: 199.232.186.132
+</code></pre>
+<p>ده معناه:</p>
+<p>DNS شغال</p>
+<hr>
+<h2><strong>3.3 HTTP/HTTPS Connectivity</strong></h2>
+<p>يعني بعد ما عرفنا IP، نقدر نفتح اتصال على port معين.</p>
+<p>مثلاً:</p>
+<pre><code class="language-text">http  = port 80  
+https = port 443
+</code></pre>
+<p>اختباره ممكن يكون بـ:</p>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-bash">docker run --rm curlimages/curl:latest curl -I https://deb.debian.org
+</code></pre>
+<p>لو DNS شغال لكن HTTP واقع، تشوف أخطاء زي:</p>
+<pre><code class="language-text">Unable to connect to deb.debian.org:http
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-text">Connection timed out  
+</code></pre>
+<hr>
+<h1><strong>12. الفرق بين DNS failure و HTTP failure</strong></h1>
+
+<p>دي أهم نقطة من تجربة مشروعك.</p>
+<h2><strong>DNS failure</strong></h2>
+<p>الرسالة:</p>
+<pre><code class="language-text">Temporary failure resolving &#39;deb.debian.org&#39;
+</code></pre>
+<p>المعنى:</p>
+<p>مش عارف أجيب IP بتاع deb.debian.org</p>
+<p>الحل:</p>
+<ul>
+<li>افحص <code>/etc/resolv.conf</code>  </li>
+<li>افحص DNS بتاع الجهاز  </li>
+<li>عدل Docker DNS</li>
+</ul>
+<hr>
+<h2><strong>HTTP failure</strong></h2>
+<p>الرسالة:</p>
+<pre><code class="language-text">Could not connect to debian.map.fastlydns.net:80  
+Unable to connect to deb.debian.org:http
+</code></pre>
+<p>المعنى:</p>
+<p>أنا عرفت IP، بس مش قادر أفتح اتصال HTTP</p>
+<p>الحل:</p>
+<ul>
+<li>جرّب HTTPS بدل HTTP.  </li>
+<li>زود retries/timeouts.  </li>
+<li>غير mirror.  </li>
+<li>شوف proxy/VPN/firewall.  </li>
+<li>اختبر port 80/443.</li>
+</ul>
+<hr>
+<h1><strong>19. الفرق بين build-time network و run-time network</strong></h1>
+
+<p>دي نقطة advanced شوية.</p>
+<h2><strong>Build-time</strong></h2>
+<p>ده أثناء:</p>
+<pre><code class="language-bash">docker compose build
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-bash">docker build
+</code></pre>
+<p>مثلاً Dockerfile يعمل:</p>
+<pre><code class="language-dockerfile">RUN apt-get update
+</code></pre>
+<p>ده network أثناء البناء.</p>
+<hr>
+<h2><strong>Run-time</strong></h2>
+<p>ده بعد ما container يشتغل:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>مثلاً التطبيق يكلم API أو database.</p>
+<hr>
+<h2><strong>ليه الفرق مهم؟</strong></h2>
+<p>لأن ممكن DNS يشتغل في runtime لكن build يفشل، أو العكس.</p>
+<p>في حالتك كنا محتاجين DNS شغال أثناء build عشان:</p>
+<pre><code class="language-dockerfile">RUN apt-get update
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثالث: أدوات وأوامر الفحص (Debugging Tools)</h1>
+</div>
+<h1><strong>6. شرح كل أمر استخدمناه</strong></h1>
+
+<h2><strong>6.1 الأمر <code>docker run --rm busybox nslookup deb.debian.org</code></strong></h2>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<h3><strong>تفكيك الأمر</strong></h3>
+<pre><code class="language-text">docker
+</code></pre>
+<p>برنامج Docker.</p>
+<pre><code class="language-text">run
+</code></pre>
+<p>شغل container جديد.</p>
+<pre><code class="language-text">--rm
+</code></pre>
+<p>امسح container بعد ما يخلص.</p>
+<p>ده مفيد في الاختبارات السريعة عشان متسيبش containers كتير.</p>
+<pre><code class="language-text">busybox
+</code></pre>
+<p>Image صغيرة جدًا فيها أدوات Linux بسيطة.</p>
+<pre><code class="language-text">nslookup deb.debian.org
+</code></pre>
+<p>نفذ أمر DNS lookup داخل container.</p>
+<hr>
+<h2><strong>استخدامه</strong></h2>
+<p>الأمر ده بيجاوب سؤال:</p>
+<p>هل Docker container يقدر يعمل DNS resolve؟</p>
+<hr>
+<h2><strong>نتيجة ناجحة</strong></h2>
+<pre><code class="language-text">Server:     	172.23.100.226  
+Address:    	172.23.100.226:53
+
+Name:   debian.map.fastlydns.net  
+Address  
+</code></pre>
+<hr>
+<h2><strong>نتيجة فاشلة</strong></h2>
+<pre><code class="language-text">;; connection timed out; no servers could be reached
+</code></pre>
+<p>معناها DNS server مش بيرد.</p>
+<hr>
+<h1><strong>7. الأمر <code>ping</code></strong></h1>
+
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8  
+</code></pre>
+<h2><strong>تفكيك الجزء المهم</strong></h2>
+<pre><code class="language-text">ping
+</code></pre>
+<p>اختبار وصول network.</p>
+<pre><code class="language-text">-c 3
+</code></pre>
+<p>ابعت 3 packets فقط.</p>
+<p>بدون <code>-c 3</code>، الأمر ممكن يفضل شغال لحد ما توقفه.</p>
+<pre><code class="language-text">8.8.8.8
+</code></pre>
+<p>IP مباشر لـ Google DNS.</p>
+<hr>
+<h2><strong>ليه استخدمنا IP مش domain؟</strong></h2>
+<p>لأننا كنا عايزين نختبر الإنترنت بدون DNS.</p>
+<p>لو استخدمت:</p>
+<pre><code class="language-text">ping google.com
+</code></pre>
+<p>ده يحتاج DNS.</p>
+<p>لكن:</p>
+<pre><code class="language-text">ping 8.8.8.8
+</code></pre>
+<p>لا يحتاج DNS.</p>
+<hr>
+<h2><strong>النتيجة عندك</strong></h2>
+<pre><code class="language-text">3 packets transmitted, 3 packets received, 0% packet loss
+</code></pre>
+<p>المعنى:</p>
+<p>Docker container عنده network/IP connectivity</p>
+<hr>
+<h1><strong>8. الأمر <code>cat /etc/resolv.conf</code></strong></h1>
+
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf
+</code></pre>
+<h2><strong><code>/etc/resolv.conf</code> ده إيه؟</strong></h2>
+<p>ده ملف داخل Linux بيقول للنظام يستخدم DNS servers إيه.</p>
+<p>مثال:</p>
+<pre><code class="language-text">nameserver 172.23.100.226  
+nameserver 172.23.100.225
+</code></pre>
+<p>أي برنامج جوه container لما يحتاج DNS، بيرجع للملف ده.</p>
+<hr>
+<h2><strong>النتيجة القديمة عندك</strong></h2>
+<pre><code class="language-text">nameserver 8.8.8.8  
+nameserver 8.8.4.4
+</code></pre>
+<p>وكان فيها:</p>
+<pre><code class="language-text">Overrides: [nameservers]
+</code></pre>
+<p>ده معناه إن Docker Engine config كان مجبر Docker يستخدم DNS معين.</p>
+<hr>
+<h2><strong>النتيجة بعد الإصلاح</strong></h2>
+<pre><code class="language-text">nameserver 172.23.100.226  
+nameserver 172.23.100.225
+</code></pre>
+<p>وده كان التصحيح المطلوب.</p>
+<hr>
+<h1><strong>9. الأمر <code>scutil --dns</code></strong></h1>
+
+<p>على macOS:</p>
+<pre><code class="language-text">scutil --dns | grep nameserver
+</code></pre>
+<h2><strong><code>scutil --dns</code></strong></h2>
+<p>يعرض إعدادات DNS اللي macOS بيستخدمها.</p>
+<h2><strong><code>|</code></strong></h2>
+<p>ده pipe.</p>
+<p>معناه:</p>
+<p>خد output الأمر الأول وابعته للأمر الثاني.</p>
+<h2><strong><code>grep nameserver</code></strong></h2>
+<p>فلتر النتائج واعرض السطور اللي فيها كلمة <code>nameserver</code>.</p>
+<hr>
+<h2><strong>النتيجة عندك</strong></h2>
+<pre><code class="language-text">nameserver[0] : 172.23.100.226  
+nameserver[1] : 172.23.100.225
+</code></pre>
+<p>ودي قلنا لـ Docker يستخدمها.</p>
+<hr>
+<h1><strong>13. اختبار <code>apt-get update</code></strong></h1>
+
+<p>استخدمناه كاختبار واقعي.</p>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<h2><strong>ليه ده اختبار مهم؟</strong></h2>
+<p>لأنه يشبه اللي Dockerfile بيعمله.</p>
+<p>لو نجح:</p>
+<pre><code class="language-text">Fetched ...  
+Reading package lists...
+</code></pre>
+<p>يبقى Debian repo reachable.</p>
+<p>لو فشل بـ DNS:</p>
+<pre><code class="language-text">Temporary failure resolving
+</code></pre>
+<p>يبقى DNS.</p>
+<p>لو فشل بـ HTTP:</p>
+<pre><code class="language-text">Unable to connect
+</code></pre>
+<p>يبقى اتصال HTTP/HTTPS أو mirror.</p>
+<hr>
+<h2><strong>شرح الأمر</strong></h2>
+<pre><code class="language-bash">docker run
+</code></pre>
+<p>شغل container.</p>
+<pre><code class="language-text">--rm
+</code></pre>
+<p>امسحه بعد ما يخلص.</p>
+<pre><code class="language-text">debian:stable-slim
+</code></pre>
+<p>Image Debian خفيفة.</p>
+<pre><code class="language-text">bash -lc
+</code></pre>
+<p>شغل bash ونفذ الأمر اللي بعده.</p>
+<pre><code class="language-text">&quot;apt-get update&quot;
+</code></pre>
+<p>حدث package indexes.</p>
+<hr>
+<h1><strong>14. معنى <code>apt-get update</code></strong></h1>
+
+<p>الأمر:</p>
+<pre><code class="language-text">apt-get update
+</code></pre>
+<p>لا يثبت برامج.</p>
+<p>هو فقط يحدث قائمة البرامج المتاحة من repositories.</p>
+<p>يعني يحمل files زي:</p>
+<pre><code class="language-text">InRelease  
+Packages
+</code></pre>
+<p>عشان apt يعرف:</p>
+<ul>
+<li>إيه الباكدجات المتاحة؟  </li>
+<li>آخر versions؟  </li>
+<li>dependencies؟  </li>
+<li>package موجودة ولا لا؟</li>
+</ul>
+<hr>
+<h2><strong>ليه لو فشل تظهر packages كأنها مش موجودة؟</strong></h2>
+<p>لأن apt معندوش index حديث.</p>
+<p>فلو بعدها عملت:</p>
+<pre><code class="language-text">apt-get install poppler-utils
+</code></pre>
+<p>ممكن يقول:</p>
+<pre><code class="language-text">Package poppler-utils has no installation candidate
+</code></pre>
+<p>مش لأن package مش موجودة بالضرورة، لكن لأن قائمة packages مش اتحملت.</p>
+<hr>
+<h1><strong>15. اختبار <code>apt-cache policy</code></strong></h1>
+
+<p>استخدمنا:</p>
+<pre><code class="language-text">apt-cache policy python3.13 python3.13-venv poppler-utils
+</code></pre>
+<h2><strong>بيعمل إيه؟</strong></h2>
+<p>يعرض حالة package:</p>
+<ul>
+<li>هل مثبتة؟  </li>
+<li>هل ليها Candidate؟  </li>
+<li>version المتاح؟  </li>
+<li>مصدرها؟</li>
+</ul>
+<hr>
+<h2><strong>مثال من عندك</strong></h2>
+<pre><code class="language-text">python3.13:  
+  Installed: 3.13.12-1  
+  Candidate: 3.13.12-1
+</code></pre>
+<p>ده معناه:</p>
+<p>python3.13 موجود أصلًا</p>
+<p>لكن:</p>
+<pre><code class="language-text">python3.13-venv:  
+  Installed: (none)  
+  Candidate: (none)
+</code></pre>
+<p>ده وقتها كان بسبب إن <code>apt-get update</code> فشل.</p>
+<p>بعد ما update نجح، <code>python3.13-venv</code> اتثبت عادي.</p>
+<hr>
+<h1><strong>21. أوامر طوارئ للتشخيص</strong></h1>
+
+<h2><strong>عرض DNS داخل container</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf
+</code></pre>
+<hr>
+<h2><strong>اختبار DNS default</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<hr>
+<h2><strong>اختبار DNS server معين</strong></h2>
+<pre><code class="language-bash">docker run --rm --dns 172.23.100.226 busybox nslookup deb.debian.org
+</code></pre>
+<hr>
+<h2><strong>اختبار الإنترنت بدون DNS</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8
+</code></pre>
+<hr>
+<h2><strong>اختبار apt</strong></h2>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<hr>
+<h2><strong>اختبار texlive image تحديدًا</strong></h2>
+<pre><code class="language-bash">docker run --rm texlive/texlive:latest bash -lc &quot;apt-get update&quot;
+</code></pre>
+<hr>
+<h2><strong>معرفة DNS بتاع macOS</strong></h2>
+<pre><code class="language-text">scutil --dns | grep nameserver
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الرابع: الحلول والإصلاحات العملية</h1>
+</div>
+<h1><strong>5. خطوات التشخيص الصحيحة</strong></h1>
+
+<p>لو Docker build وقع بسبب network، متبدأش تعدل Dockerfile عشوائي.</p>
+<p>امشي بالترتيب ده.</p>
+<hr>
+<h2><strong>Step 1: اختبر الإنترنت بالـ IP</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8
+</code></pre>
+<h3><strong>لو فشل</strong></h3>
+<p>يبقى المشكلة مش DNS فقط.</p>
+<p>دي مشكلة network عامة داخل Docker.</p>
+<p>احتمالاتها:</p>
+<ul>
+<li>Docker Desktop network bug.  </li>
+<li>VPN.  </li>
+<li>Firewall.  </li>
+<li>Proxy.  </li>
+<li>Docker network corrupt.  </li>
+<li>الجهاز نفسه مفيهوش route.</li>
+</ul>
+<h3><strong>لو نجح</strong></h3>
+<p>يبقى الإنترنت الأساسي شغال، وننتقل لاختبار DNS.</p>
+<hr>
+<h2><strong>Step 2: اختبر DNS</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<h3><strong>لو نجح</strong></h3>
+<p>DNS شغال.</p>
+<h3><strong>لو فشل</strong></h3>
+<p>زي:</p>
+<pre><code class="language-text">;; connection timed out; no servers could be reached
+</code></pre>
+<p>يبقى DNS داخل Docker فيه مشكلة.</p>
+<hr>
+<h2><strong>Step 3: شوف Docker بيستخدم DNS إيه</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf
+</code></pre>
+<p>في حالتك ظهر:</p>
+<pre><code class="language-text">nameserver 8.8.8.8  
+nameserver 8.8.4.4
+</code></pre>
+<p>وده كان غلط بالنسبة لشبكتك.</p>
+<hr>
+<h2><strong>Step 4: شوف جهازك نفسه بيستخدم DNS إيه</strong></h2>
+<p>على macOS:</p>
+<pre><code class="language-text">scutil --dns | grep nameserver
+</code></pre>
+<p>عندك ظهر:</p>
+<pre><code class="language-text">nameserver[0] : 172.23.100.226  
+nameserver[1] : 172.23.100.225
+</code></pre>
+<p>ودي كانت الـ DNS servers الصحيحة.</p>
+<hr>
+<h2><strong>Step 5: جرّب DNS الجهاز داخل Docker</strong></h2>
+<pre><code class="language-bash">docker run --rm --dns 172.23.100.226 busybox nslookup deb.debian.org
+</code></pre>
+<p>عندك نجح وطلع:</p>
+<pre><code class="language-text">Name:   debian.map.fastlydns.net  
+Address: 199.232.186.132
+</code></pre>
+<p>ده كان الدليل النهائي إن:</p>
+<p>Docker DNS config هو المشكلة</p>
+<hr>
+<h1><strong>10. إصلاح Docker Engine DNS</strong></h1>
+
+<p>كان عندك Docker Engine config بالشكل ده:</p>
+<pre><code class="language-text">{  
+  &quot;builder&quot;: {  
+	&quot;gc&quot;: {  
+  	&quot;defaultKeepStorage&quot;: &quot;20GB&quot;,  
+  	&quot;enabled&quot;: true  
+	}  
+  },  
+  &quot;dns&quot;: [  
+	&quot;8.8.8.8&quot;,  
+	&quot;8.8.4.4&quot;  
+  ],  
+  &quot;experimental&quot;: false  
+}
+</code></pre>
+<p>غيرناه إلى:</p>
+<pre><code class="language-text">{  
+  &quot;builder&quot;: {  
+	&quot;gc&quot;: {  
+  	&quot;defaultKeepStorage&quot;: &quot;20GB&quot;,  
+  	&quot;enabled&quot;: true  
+	}  
+  },  
+  &quot;dns&quot;: [  
+	&quot;172.23.100.226&quot;,  
+	&quot;172.23.100.225&quot;  
+  ],  
+  &quot;experimental&quot;: false  
+}  
+</code></pre>
+<hr>
+<h2><strong>شرح JSON بسرعة</strong></h2>
+<pre><code class="language-text">&quot;dns&quot;: [  
+  &quot;172.23.100.226&quot;,  
+  &quot;172.23.100.225&quot;  
+]
+</code></pre>
+<p>ده بيقول لـ Docker Engine:</p>
+<p>لما containers تحتاج DNS، استخدم السيرفرات دي.</p>
+<hr>
+<h2><strong>بعد التعديل</strong></h2>
+<p>لازم تعمل:</p>
+<pre><code class="language-text">Apply &amp; Restart
+</code></pre>
+<p>من Docker Desktop.</p>
+<p>لأن Docker Engine لازم يعيد التشغيل عشان يطبق الإعداد.</p>
+<hr>
+<h1><strong>11. ليه Google DNS ما اشتغلش؟</strong></h1>
+
+<p>أنت جربت:</p>
+<pre><code class="language-bash">docker run --rm --dns 8.8.8.8 busybox nslookup deb.debian.org
+</code></pre>
+<p>وفشل.</p>
+<p>وجربت:</p>
+<pre><code class="language-bash">docker run --rm --dns 1.1.1.1 busybox nslookup deb.debian.org
+</code></pre>
+<p>وفشل.</p>
+<p>لكن لما جربت:</p>
+<pre><code class="language-bash">docker run --rm --dns 172.23.100.226 busybox nslookup deb.debian.org
+</code></pre>
+<p>اشتغل.</p>
+<p>ده معناه غالبًا إن شبكتك:</p>
+<ul>
+<li>تمنع DNS الخارجي.  </li>
+<li>أو تجبرك تستخدم DNS داخلي.  </li>
+<li>أو VPN/Proxy/Corporate network موجه DNS داخلي.  </li>
+<li>أو الراوتر/الشبكة لا تسمح بالاستعلامات لـ <code>8.8.8.8:53</code>.</li>
+</ul>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>الإنترنت عندك كان شغال، بس الشبكة بتقول:</p>
+<p>لو عايز تسأل عن أسماء المواقع، اسأل DNS بتاعي أنا، مش Google.</p>
+<p>Docker كان بيسأل Google، فمفيش رد.</p>
+<p>لما خليناه يسأل DNS الشبكة، اشتغل.</p>
+<hr>
+<h1><strong>16. ليه استخدمنا HTTPS بدل HTTP؟</strong></h1>
+
+<p>الخطأ كان:</p>
+<pre><code class="language-text">Unable to connect to deb.debian.org:http
+</code></pre>
+<p>يعني HTTP port 80 كان بيعمل timeout.</p>
+<p>فعدلنا sources من:</p>
+<pre><code class="language-text">http://deb.debian.org
+</code></pre>
+<p>إلى:</p>
+<pre><code class="language-text">https://deb.debian.org
+</code></pre>
+<p>يعني استخدام port 443 بدل port 80.</p>
+<hr>
+<h2><strong>في Dockerfile استخدمنا:</strong></h2>
+<pre><code class="language-text">find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;s|http://deb.debian.org|https://deb.debian.org|g&#39; {} +
+</code></pre>
+<p>هنشرحها باختصار.</p>
+<hr>
+<h2><strong><code>find /etc/apt</code></strong></h2>
+<p>دور داخل فولدر:</p>
+<pre><code class="language-text">/etc/apt
+</code></pre>
+<p>وده فيه ملفات مصادر apt.</p>
+<hr>
+<h2><strong><code>-type f</code></strong></h2>
+<p>هات الملفات فقط.</p>
+<hr>
+<h2><strong><code>\( -name &quot;*.list&quot; -o -name &quot;*.sources&quot; \)</code></strong></h2>
+<p>هات الملفات اللي اسمها ينتهي بـ:</p>
+<pre><code class="language-text">.list
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-text">.sources
+</code></pre>
+<p>ملحوظة: الأقواس لازم تتعمل escape في shell:</p>
+<pre><code class="language-text">\&lt;/span\&gt;\&lt;/div\&gt;\&lt;div class=&quot;scriptor-paragraph&quot;\&gt;\&lt;span attribution=&quot;{\&amp;quot;name\&amp;quot;:\&amp;quot;Copilot\&amp;quot;,\&amp;quot;oid\&amp;quot;:\&amp;quot;E64C3D4F-5E12-4514-AD9B-893A6FAFD00C\&amp;quot;,\&amp;quot;id\&amp;quot;:\&amp;quot;E64C3D4F-5E12-4514-AD9B-893A6FAFD00C\&amp;quot;,\&amp;quot;userInfo\&amp;quot;:{\&amp;quot;name\&amp;quot;:\&amp;quot;Copilot\&amp;quot;,\&amp;quot;oid\&amp;quot;:\&amp;quot;E64C3D4F-5E12-4514-AD9B-893A6FAFD00C\&amp;quot;,\&amp;quot;id\&amp;quot;:\&amp;quot;E64C3D4F-5E12-4514-AD9B-893A6FAFD00C\&amp;quot;},\&amp;quot;timestamp\&amp;quot;:1781162700000,\&amp;quot;dataSource\&amp;quot;:0}&quot;\&gt;  
+</code></pre>
+<hr>
+<h2><strong><code>-exec sed -i ... {} +</code></strong></h2>
+<p>نفذ أمر <code>sed</code> على الملفات اللي لقيتها.</p>
+<hr>
+<h2><strong><code>sed -i</code></strong></h2>
+<p>عدل الملف في مكانه.</p>
+<hr>
+<h2><strong><code>&#39;s|http://deb.debian.org|https://deb.debian.org|g&#39;</code></strong></h2>
+<p>استبدل كل:</p>
+<pre><code class="language-text">http://deb.debian.org
+</code></pre>
+<p>بـ:</p>
+<pre><code class="language-text">https://deb.debian.org
+</code></pre>
+<hr>
+<h1><strong>17. ليه زودنا apt retries/timeouts؟</strong></h1>
+
+<p>استخدمنا:</p>
+<pre><code class="language-text">printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries
+</code></pre>
+<h2><strong>الهدف</strong></h2>
+<p>نقول لـ apt:</p>
+<ul>
+<li>لو التحميل فشل، حاول 5 مرات.  </li>
+<li>استنى 180 ثانية قبل ما تعتبر HTTP timeout.  </li>
+<li>استنى 180 ثانية قبل ما تعتبر HTTPS timeout.</li>
+</ul>
+<hr>
+<h2><strong>شرح الأمر</strong></h2>
+<pre><code class="language-text">printf
+</code></pre>
+<p>يطبع نص منسق.</p>
+<hr>
+<pre><code class="language-text">Acquire::Retries &quot;5&quot;;
+</code></pre>
+<p>عدد مرات إعادة المحاولة.</p>
+<hr>
+<pre><code class="language-text">Acquire::http::Timeout &quot;180&quot;;
+</code></pre>
+<p>مهلة HTTP بالثواني.</p>
+<hr>
+<pre><code class="language-text">Acquire::https::Timeout &quot;180&quot;;
+</code></pre>
+<p>مهلة HTTPS بالثواني.</p>
+<hr>
+<pre><code class="language-text">\&gt; /etc/apt/apt.conf.d/80-retries
+</code></pre>
+<p>اكتب الإعدادات في ملف apt config.</p>
+<hr>
+<h2><strong>ليه ده كان مهم عندك؟</strong></h2>
+<p>لأن السرعة كانت بطيئة جدًا:</p>
+<pre><code class="language-text">12.4 kB/s
+</code></pre>
+<p>فـ apt كان محتاج يصبر أكتر.</p>
+<hr>
+<h1><strong>18. Docker DNS داخل compose</strong></h1>
+
+<p>ممكن تضيف DNS في <code>docker-compose.yml</code>:</p>
+<pre><code class="language-yaml">services:  
+  backend:  
+	dns:  
+  	- 172.23.100.226  
+  	- 172.23.100.225
+
+  frontend:  
+	dns:  
+  	- 172.23.100.226  
+  	- 172.23.100.225
+</code></pre>
+<p>لكن في حالتك الأفضل كان Docker Engine DNS.</p>
+<h2><strong>ليه؟</strong></h2>
+<p>لأن المشكلة كانت أثناء:</p>
+<pre><code class="language-bash">docker compose build
+</code></pre>
+<p>مش بس أثناء تشغيل containers.</p>
+<p>إعداد DNS في Docker Engine أقوى وأعم.</p>
+<hr>
+<h1><strong>20. مشاكل VPN / Proxy / Firewall</strong></h1>
+
+<p>لو Docker يقدر يعمل ping لكن DNS fails، دور على:</p>
+<ul>
+<li>VPN  </li>
+<li>Corporate proxy  </li>
+<li>Cloudflare WARP  </li>
+<li>AdGuard  </li>
+<li>Little Snitch  </li>
+<li>LuLu firewall  </li>
+<li>Antivirus firewall  </li>
+<li>DNS filtering  </li>
+<li>Router policy</li>
+</ul>
+<hr>
+<h2><strong>علامات وجود DNS filtering</strong></h2>
+<ul>
+<li><code>ping 8.8.8.8</code> يشتغل.  </li>
+<li><code>nslookup</code> على <code>8.8.8.8</code> يفشل.  </li>
+<li>DNS الداخلي يشتغل.  </li>
+<li>DNS خارجي <code>1.1.1.1</code> و <code>8.8.8.8</code> لا يعمل.</li>
+</ul>
+<p>وده كان قريب جدًا من حالتك.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الخامس: الدليل السريع والتقييم</h1>
+</div>
+<h1><strong>4. اقرأ الأخطاء صح</strong></h1>
+
+<h2><strong>الخطأ الأول</strong></h2>
+<pre><code class="language-text">Temporary failure resolving &#39;deb.debian.org&#39;  
+</code></pre>
+<p>ده معناه:</p>
+<pre><code class="language-text">DNS failed
+</code></pre>
+<p>يعني Docker مش عارف يحول الاسم إلى IP.</p>
+<hr>
+<h2><strong>الخطأ الثاني</strong></h2>
+<pre><code class="language-text">;; connection timed out; no servers could be reached
+</code></pre>
+<p>ده ظهر مع:</p>
+<pre><code class="language-text">nslookup
+</code></pre>
+<p>معناه:</p>
+<p>الـ container حاول يسأل DNS server لكن مفيش رد</p>
+<p>الأسباب المحتملة:</p>
+<ul>
+<li>DNS server غلط.  </li>
+<li>DNS محجوب من الشبكة.  </li>
+<li>Docker Desktop عنده config غلط.  </li>
+<li>VPN/Firewall مانع DNS.  </li>
+<li>الشركة/الشبكة سامحة DNS داخلي فقط.</li>
+</ul>
+<hr>
+<h2><strong>الخطأ الثالث</strong></h2>
+<pre><code class="language-text">Could not connect to debian.map.fastlydns.net:80  
+Unable to connect to deb.debian.org:http
+</code></pre>
+<p>ده معناه:</p>
+<p>DNS اشتغل، لكن الاتصال على HTTP port 80 فشل</p>
+<p>يعني المرحلة دي مش DNS.</p>
+<p>دي Network/HTTP/Mirror issue.</p>
+<hr>
+<h2><strong>الخطأ الرابع</strong></h2>
+<pre><code class="language-text">Package has no installation candidate
+</code></pre>
+<p>ده خادع جدًا.</p>
+<p>معناه ممكن يكون:</p>
+<ol>
+<li>الباكدج مش موجودة فعلًا.  </li>
+<li>أو <code>apt-get update</code> فشل، فـ apt معندوش package lists.  </li>
+<li>أو أنت على repo مختلفة.  </li>
+<li>أو architecture مختلفة.  </li>
+<li>أو اسم package غلط.</li>
+</ol>
+<p>في حالتك، السبب كان غالبًا إن <code>apt-get update</code> فشل قبلها.</p>
+<hr>
+<h1><strong>22. Decision Tree سريع</strong></h1>
+
+<p>لو ظهر:</p>
+<pre><code class="language-text">Temporary failure resolving
+</code></pre>
+<p>اعمل:</p>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<p>لو فشل:</p>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8  
+  
+</code></pre>
+<hr>
+<h2><strong>الحالة A: ping فشل</strong></h2>
+<p>المشكلة network عامة.</p>
+<p>جرّب:</p>
+<pre><code class="language-bash">docker compose down  
+docker network prune
+
+Restart Docker Desktop.
+</code></pre>
+<p>راجع VPN/Firewall.</p>
+<hr>
+<h2><strong>الحالة B: ping نجح و nslookup فشل</strong></h2>
+<p>المشكلة DNS.</p>
+<p>اعمل:</p>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf  
+scutil --dns | grep nameserver
+</code></pre>
+<p>وجرب:</p>
+<pre><code class="language-bash">docker run --rm --dns YOUR_DNS busybox nslookup deb.debian.org
+</code></pre>
+<p>لو نجح، عدّل Docker Engine DNS.</p>
+<hr>
+<h2><strong>الحالة C: nslookup نجح و apt فشل</strong></h2>
+<p>المشكلة مش DNS.</p>
+<p>اختبر:</p>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>لو HTTP timeout، جرب HTTPS أو mirror أو timeout أعلى.</p>
+<hr>
+<h1><strong>23. جدول ذهني للمشاكل</strong></h1>
+
+<p>بدون جدول رسمي، احفظها كده:</p>
+<pre><code class="language-text">ping IP fails  
+</code></pre>
+<p>=&gt; Network مشكلة عامة</p>
+<pre><code class="language-text">ping IP works + nslookup fails  
+</code></pre>
+<p>=&gt; DNS مشكلة</p>
+<pre><code class="language-text">nslookup works + http fails  
+</code></pre>
+<p>=&gt; HTTP/HTTPS أو mirror أو firewall</p>
+<pre><code class="language-text">apt update fails + install says candidate none  
+</code></pre>
+<p>=&gt; غالبًا package lists مش اتحملت</p>
+<pre><code class="language-bash">build fails but docker run works  
+</code></pre>
+<h2>=&gt; BuildKit/build-time network أو timeout/cache</h2>
+<h1><strong>25. التريكات المهمة</strong></h1>
+
+<h2><strong>تريك 1: لا تثق في آخر error فقط</strong></h2>
+<p>أحيانًا آخر error يكون:</p>
+<pre><code class="language-text">Package has no installation candidate
+</code></pre>
+<p>لكن السبب الحقيقي فوقه:</p>
+<pre><code class="language-text">apt-get update failed
+</code></pre>
+<p>دايمًا اقرأ أول error حقيقي.</p>
+<hr>
+<h2><strong>تريك 2: افصل المشكلة</strong></h2>
+<p>لا تختبر بـ <code>docker compose build</code> مباشرة كل مرة.</p>
+<p>اختبر بحاجات صغيرة:</p>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<p>ثم:</p>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>ثم ارجع للـ build.</p>
+<hr>
+<h2><strong>تريك 3: استخدم IP لاختبار الشبكة بدون DNS</strong></h2>
+<pre><code class="language-text">ping 8.8.8.8
+</code></pre>
+<p>لو استخدمت domain، دخلت DNS في الاختبار.</p>
+<hr>
+<h2><strong>تريك 4: استخدم نفس base image</strong></h2>
+<p>لو backend Dockerfile يبدأ بـ:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+</code></pre>
+<p>اختبر نفس image:</p>
+<pre><code class="language-bash">docker run --rm texlive/texlive:latest bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>مش بس Debian stable.</p>
+<hr>
+<h2><strong>تريك 5: لو الشبكة بطيئة، زود retries</strong></h2>
+<p>في Dockerfile:</p>
+<pre><code class="language-dockerfile">RUN printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries
+</code></pre>
+<hr>
+<h2><strong>تريك 6: لا تستخدم <code>--no-cache</code> إلا للضرورة</strong></h2>
+<p>لأنك هتعيد تحميل كل حاجة.</p>
+<p>بعد ما build نجح، استخدم:</p>
+<pre><code class="language-bash">docker compose build backend
+</code></pre>
+<p>بدل:</p>
+<pre><code class="language-bash">docker compose build --no-cache backend
+</code></pre>
+<hr>
+<h1><strong>27. Cheatsheet سريع</strong></h1>
+
+<h2><strong>DNS داخل Docker</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf
+</code></pre>
+<h2><strong>DNS lookup</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<h2><strong>DNS lookup بسيرفر معين</strong></h2>
+<pre><code class="language-bash">docker run --rm --dns 172.23.100.226 busybox nslookup deb.debian.org
+</code></pre>
+<h2><strong>IP connectivity</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8
+</code></pre>
+<h2><strong>macOS DNS</strong></h2>
+<pre><code class="language-text">scutil --dns | grep nameserver
+</code></pre>
+<h2><strong>apt test</strong></h2>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<h2><strong>image-specific apt test</strong></h2>
+<pre><code class="language-bash">docker run --rm texlive/texlive:latest bash -lc &quot;apt-get update&quot;
+</code></pre>
+<h2><strong>compose status</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<h2><strong>build backend</strong></h2>
+<pre><code class="language-bash">docker compose --progress=plain build backend
+</code></pre>
+<hr>
+<h1><strong>28. تبسيط سينيور نهائي</strong></h1>
+
+<p>مشاكل Docker network تتشخص كأنك بتسأل 3 أسئلة بالترتيب:</p>
+<h2><strong>السؤال الأول</strong></h2>
+<p>هل الـ container عنده إنترنت بالـ IP؟</p>
+<pre><code class="language-text">ping 8.8.8.8
+</code></pre>
+<p>لو لا، المشكلة network عامة.</p>
+<hr>
+<h2><strong>السؤال الثاني</strong></h2>
+<p>هل الـ container يقدر يترجم أسماء المواقع؟</p>
+<pre><code class="language-text">nslookup deb.debian.org
+</code></pre>
+<p>لو لا، المشكلة DNS.</p>
+<hr>
+<h2><strong>السؤال الثالث</strong></h2>
+<p>هل يقدر يفتح HTTP/HTTPS بعد ما عرف الـ IP؟</p>
+<pre><code class="language-text">apt-get update
+</code></pre>
+<p>لو لا، المشكلة mirror/HTTP/firewall/timeout.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل السادس: التدريب العملي</h1>
+</div>
+<h1><strong>26. تمارين عملية</strong></h1>
+
+<h2><strong>تمرين 1: اختبر IP connectivity</strong></h2>
+<p>نفذ:</p>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8
+</code></pre>
+<p>واكتب:</p>
+<p>هل packet loss = 0%؟</p>
+<hr>
+<h2><strong>تمرين 2: اختبر DNS</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<p>لو نجح، اكتب الـ IP اللي رجع.</p>
+<hr>
+<h2><strong>تمرين 3: اعرض DNS داخل Docker</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf
+</code></pre>
+<p>واكتب nameservers.</p>
+<hr>
+<h2><strong>تمرين 4: اعرض DNS بتاع macOS</strong></h2>
+<pre><code class="language-text">scutil --dns | grep nameserver
+</code></pre>
+<p>قارن بينه وبين Docker.</p>
+<hr>
+<h2><strong>تمرين 5: اختبر apt</strong></h2>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>لو نجح، اكتب آخر سطر.</p>
+<p>غالبًا:</p>
+<pre><code class="language-text">Reading package lists...
+</code></pre>
+<hr>
+<h2><strong>تمرين 6: اختبر base image بتاع المشروع</strong></h2>
+<pre><code class="language-bash">docker run --rm texlive/texlive:latest bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>راقب هل بيستخدم <code>http</code> ولا <code>https</code>، وهل التحميل سريع ولا بطيء.</p>
+<hr>
+<h1><strong>30. واجب قبل Handbook 3</strong></h1>
+
+<p>نفذ الأوامر دي واحفظ نواتجها في ملف ملاحظات:</p>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf
+
+docker run --rm busybox nslookup deb.debian.org
+
+docker run --rm busybox ping -c 3 8.8.8.8
+
+scutil --dns | grep nameserver
+
+docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>وبعدها شغل:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>هدف الواجب إنك تبقى قادر تقول:</p>
+<ul>
+<li>Docker بيستخدم DNS إيه؟  </li>
+<li>الجهاز بيستخدم DNS إيه؟  </li>
+<li>DNS شغال ولا لا؟  </li>
+<li>الإنترنت شغال ولا لا؟  </li>
+<li>apt شغال ولا لا؟</li>
+</ul>
+<hr>
+<p>لو جاهز، الهاند بوك التالت هيكون عن</p>
+<h1>Tab 3</h1>
+
+    
+        <div class="nav-links">
+            <a href="handbook1.html" class="btn">السابق</a>
+            <span>الجزء 2 من 4</span>
+            <a href="handbook3.html" class="btn">التالي</a>
+            <a href="index.html" class="btn btn-secondary">العودة للفهرس</a>
+        </div>
+    
+  </div>
+  <!-- Prism.js Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+</body>
+</html>

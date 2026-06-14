@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Handbook 1 — أساسيات Docker و Docker Compose للمشروع</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Prism.js for syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-code: #0b0f19;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-headings: #ffffff;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --font-family-sans: 'Cairo', sans-serif;
+      --font-family-mono: 'JetBrains Mono', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-family-sans);
+      line-height: 1.8;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 40px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    h1, h2, h3, h4, h5, h6 { color: var(--text-headings); margin-top: 2rem; margin-bottom: 1rem; font-weight: 800; }
+    h1 { font-size: 2.2rem; color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+    h2 { font-size: 1.8rem; }
+    h3 { font-size: 1.4rem; color: var(--success); }
+    p { margin-bottom: 1.2rem; font-size: 1.1rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul, ol { margin-bottom: 1.5rem; padding-right: 2rem; }
+    li { margin-bottom: 0.5rem; font-size: 1.1rem; }
+
+    /* Professional Code Formatting */
+    pre {
+      background: var(--bg-code) !important;
+      border: 1px solid var(--border-color) !important;
+      border-left: 4px solid var(--success) !important;
+      border-radius: 12px !important;
+      padding: 20px !important;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      direction: ltr !important;
+      text-align: left !important;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    pre code {
+      font-family: var(--font-family-mono) !important;
+      font-size: 1rem !important;
+      color: var(--text-primary) !important;
+      display: block;
+      line-height: 1.6;
+    }
+    p code, li code {
+      background: rgba(255, 255, 255, 0.1);
+      font-family: var(--font-family-mono);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--warning);
+      font-size: 0.95rem;
+      direction: ltr;
+      display: inline-block;
+    }
+    hr { border: none; border-top: 1px solid var(--border-color); margin: 2.5rem 0; }
+    blockquote {
+      background: rgba(56, 189, 248, 0.05);
+      border-right: 4px solid var(--primary);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 10px 10px 0;
+      font-size: 1.15rem;
+    }
+    .nav-links {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);
+      flex-wrap: wrap; gap: 15px;
+    }
+    .btn { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: bold; transition: all 0.3s; text-align: center; }
+    .btn.btn-secondary { background: transparent; border: 1px solid var(--border-color); }
+    .btn:hover { background: var(--primary-hover); text-decoration: none; transform: translateY(-2px); }
+    img { max-width: 100%; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+<h1><strong>Handbook 1 — أساسيات Docker و Docker Compose للمشروع</strong></h1>
+<h2><strong>من الصفر لحد تشغيل Backend + Frontend وفهم اللي بيحصل</strong></h2>
+<p>يا إسلام، ده <strong>الهاند بوك الأول كامل</strong>.<br> هدفه مش إنك تحفظ أوامر Docker، هدفه إنك تفهم:</p>
+<ul>
+<li>Docker بيعمل إيه؟  </li>
+<li>Image يعني إيه؟  </li>
+<li>Container يعني إيه؟  </li>
+<li>Dockerfile دوره إيه؟  </li>
+<li>docker-compose.yml دوره إيه؟  </li>
+<li>ليه عندك Backend و Frontend؟  </li>
+<li>إزاي تقرأ logs؟  </li>
+<li>إزاي تعرف التطبيق شغال على أنهي port؟  </li>
+<li>وإزاي تتعامل مع أوامر زي:</li>
+</ul>
+<pre><code class="language-bash">   docker compose up  
+  docker compose build  
+  docker compose ps  
+  docker compose down
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الأول: مفاهيم أساسية لفهم الصورة الكبرى</h1>
+</div>
+<h1><strong>0. القصة ببساطة</strong></h1>
+
+<p>إنت عندك مشروع اسمه تقريبًا:</p>
+<pre><code class="language-text">Session-Authoring-Tool
+</code></pre>
+<p>والمشروع فيه غالبًا جزئين:</p>
+<pre><code class="language-text">backend  
+frontend
+</code></pre>
+<p>الـ backend شغال بـ Python/Flask/Gunicorn.</p>
+<p>والـ frontend شغال بـ Vue/Vite أو build بيتقدم عن طريق Nginx.</p>
+<p>بدل ما تشغل كل جزء يدويًا على جهازك، Docker بيعمل بيئة تشغيل معزولة لكل جزء.</p>
+<p>يعني بدل ما تقول:</p>
+<pre><code class="language-bash">cd backend  
+python app.py
+</code></pre>
+<p>وبعدين:</p>
+<pre><code class="language-bash">cd frontend  
+npm run dev
+</code></pre>
+<p>Docker بيقولك:</p>
+<p>سيبلي أنا أشغلهم في containers، وكل واحد له نظامه واعتماداته والـ ports بتاعته.</p>
+<hr>
+<h1><strong>1. Docker يعني إيه؟</strong></h1>
+
+<p>Docker هو أداة بتخليك تشغل تطبيقك داخل بيئة معزولة اسمها <strong>Container</strong>.</p>
+<p>الـ Container شبه جهاز صغير جوه جهازك، لكنه أخف من Virtual Machine.</p>
+<h2><strong>الفرق بين تشغيل عادي وتشغيل Docker</strong></h2>
+<h3><strong>تشغيل عادي على جهازك</strong></h3>
+<p>لو شغلت المشروع مباشرة على جهازك، فأنت معتمد على:</p>
+<ul>
+<li>Python الموجود عندك  </li>
+<li>Node الموجود عندك  </li>
+<li>npm الموجود عندك  </li>
+<li>مكتبات النظام عندك  </li>
+<li>PATH عندك  </li>
+<li>إعدادات الشبكة عندك</li>
+</ul>
+<p>فلو أنا شغلت نفس المشروع عندي، ممكن يبوظ لأن جهازي مختلف.</p>
+<hr>
+<h3><strong>تشغيل داخل Docker</strong></h3>
+<p>Docker بيقول:</p>
+<p>أنا هجهز بيئة ثابتة ومحددة، فيها نفس Python ونفس Node ونفس packages، وأشغل المشروع جوه البيئة دي.</p>
+<p>فبدل ما المشروع يعتمد على جهازك، يعتمد على صورة Docker ثابتة.</p>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>تخيل إن المشروع مطعم.</p>
+<p>لو شغلته على جهازك مباشرة، فأنت بتطبخ في مطبخ بيتك.<br> ممكن عندك أدوات مختلفة عن غيرك.</p>
+<p>أما Docker، فهو بيبعت مع المشروع مطبخ جاهز كامل:</p>
+<ul>
+<li>نفس الفرن  </li>
+<li>نفس الأدوات  </li>
+<li>نفس المقادير  </li>
+<li>نفس طريقة التشغيل</li>
+</ul>
+<p>فأي حد يشغله يطلع نفس النتيجة تقريبًا.</p>
+<hr>
+<h1><strong>2. أهم 5 مفاهيم في Docker</strong></h1>
+
+<h2><strong>2.1 Image</strong></h2>
+<p>الـ Image هي قالب جاهز.</p>
+<p>مثال:</p>
+<pre><code class="language-text">texlive/texlive:latest  
+node:20-slim  
+nginx:1.27-alpine
+</code></pre>
+<p>دي Images.</p>
+<p>الـ Image فيها:</p>
+<ul>
+<li>نظام تشغيل مصغر  </li>
+<li>برامج  </li>
+<li>مكتبات  </li>
+<li>ملفات  </li>
+<li>إعدادات</li>
+</ul>
+<p>لكن الـ Image نفسها مش شغالة. هي مجرد قالب.</p>
+<hr>
+<h2><strong>2.2 Container</strong></h2>
+<p>الـ Container هو نسخة شغالة من Image.</p>
+<p>يعني:</p>
+<p>Image = قالب<br>Container = نسخة شغالة من القالب</p>
+<p>مثال عملي:</p>
+<p>لو عندك image اسمها:</p>
+<pre><code class="language-text">session-authoring-tool-backend  
+</code></pre>
+<p>لما تعمل:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>Docker يشغل منها container اسمه مثلًا:</p>
+<pre><code class="language-text">session-authoring-tool-backend-1
+</code></pre>
+<hr>
+<h2><strong>2.3 Dockerfile</strong></h2>
+<p>الـ Dockerfile هو ملف تعليمات بيقول لـ Docker:</p>
+<p>ابنيلي Image بالشكل ده.</p>
+<p>مثال من مشروعك:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+RUN ...  
+COPY requirements.txt .  
+RUN python3.13 -m venv /opt/venv  
+COPY . .  
+ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+
+EXPOSE 5000
+
+ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>ده بيشرح خطوات بناء backend image.</p>
+<hr>
+<h2><strong>2.4 docker-compose.yml</strong></h2>
+<p>ده ملف بيقول لـ Docker Compose:</p>
+<p>عندي أكتر من خدمة، شغلهم مع بعض.</p>
+<p>مثلاً:</p>
+<ul>
+<li>backend  </li>
+<li>frontend  </li>
+<li>database لو موجودة  </li>
+<li>redis لو موجود</li>
+</ul>
+<p>في حالتك عندك على الأقل:</p>
+<pre><code class="language-text">backend  
+frontend  
+</code></pre>
+<hr>
+<h2><strong>2.5 Docker Compose</strong></h2>
+<p>Docker Compose هو مدير تشغيل لمجموعة containers.</p>
+<p>بدل ما تشغل backend لوحده و frontend لوحده، بتقول:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>وهو يشغل كل الخدمات الموجودة في <code>docker-compose.yml</code>.</p>
+<hr>
+<h1><strong>3. العلاقة بينهم</strong></h1>
+
+<p>خلينا نرتبها:</p>
+<pre><code class="language-text">Dockerfile  
+   |  
+   | docker build  
+   v  
+Image  
+   |  
+   | docker run  
+   v  
+Container
+</code></pre>
+<p>ومع Docker Compose:</p>
+<pre><code class="language-text">docker-compose.yml  
+   |  
+   | docker compose build  
+   v  
+Images للـ services
+   |  
+   | docker compose up  
+   v  
+Containers شغالة مع بعض
+</code></pre>
+<h1><strong>16. الفرق بين Backend و Frontend Containers</strong></h1>
+
+<h2><strong>Backend</strong></h2>
+<p>مسؤول عن:</p>
+<ul>
+<li>API  </li>
+<li>معالجة الملفات  </li>
+<li>منطق التطبيق  </li>
+<li>Python  </li>
+<li>Flask  </li>
+<li>Gunicorn  </li>
+<li>endpoints تحت <code>/api</code></li>
+</ul>
+<p>في logs ظهر:</p>
+<pre><code class="language-text">Starting gunicorn  
+Listening at: http://0.0.0.0:5000
+</code></pre>
+<hr>
+<h2><strong>Frontend</strong></h2>
+<p>مسؤول عن:</p>
+<ul>
+<li>واجهة المستخدم  </li>
+<li>HTML/CSS/JS  </li>
+<li>Vue/Vite  </li>
+<li>Nginx أو dev server</li>
+</ul>
+<p>في logs ظهر:</p>
+<pre><code class="language-text">nginx/1.27.5  
+Configuration complete; ready for start up  
+</code></pre>
+<hr>
+<h2><strong>العلاقة بينهم</strong></h2>
+<p>المستخدم يفتح frontend.</p>
+<p>الـ frontend يكلم backend API.</p>
+<p>مثلاً:</p>
+<pre><code class="language-text">Browser  
+   |  
+   v  
+Frontend localhost:5173  
+   |  
+   v  
+Backend API localhost:5010 أو backend داخل Docker network
+</code></pre>
+<h1><strong>17. Network في Docker Compose</strong></h1>
+
+<p>لما عملت:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>ظهر:</p>
+<pre><code class="language-text">Network session-authoring-tool_default Created
+</code></pre>
+<p>دي شبكة داخلية.</p>
+<p>Compose بيخلي services تكلم بعض بأسماء الخدمات.</p>
+<p>يعني frontend ممكن يكلم backend باسم:</p>
+<pre><code class="language-text">backend
+</code></pre>
+<p>داخل شبكة Docker.</p>
+<p>مش لازم يعرف IP.</p>
+<hr>
+<h2><strong>مثال</strong></h2>
+<p>لو frontend container عايز يكلم backend جوه Docker، ممكن يستخدم:</p>
+<pre><code class="language-yaml">http://backend:5000
+</code></pre>
+<p>لأن service اسمها <code>backend</code>.</p>
+<hr>
+<h2><strong>من المتصفح</strong></h2>
+<p>المتصفح بتاعك خارج Docker، فبيستخدم:</p>
+<pre><code class="language-text">http://localhost:5010
+</code></pre>
+<p>دي نقطة مهمة.</p>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>جوه Docker:</p>
+<pre><code class="language-yaml">backend:5000
+</code></pre>
+<p>من جهازك:</p>
+<pre><code class="language-text">localhost:5010
+</code></pre>
+<hr>
+<h1><strong>15. Ports في Docker</strong></h1>
+
+<p>دي من أهم النقط اللي حصل فيها لبس عندك.</p>
+<p>عندك:</p>
+<pre><code class="language-text">backend   0.0.0.0:5010-\&gt;5000/tcp  
+frontend  0.0.0.0:5173-\&gt;5173/tcp
+</code></pre>
+<h2><strong>معنى backend line</strong></h2>
+<pre><code class="language-text">0.0.0.0:5010-\&gt;5000/tcp
+</code></pre>
+<p>ده يعني:</p>
+<pre><code class="language-text">Host port: 5010  
+Container port: 5000
+</code></pre>
+<p>يعني تفتح من جهازك:</p>
+<pre><code class="language-text">[http://localhost:5010](http://localhost:5010/)
+</code></pre>
+<p>لكن جوه container التطبيق سامع على:</p>
+<pre><code class="language-text">0.0.0.0:5000
+</code></pre>
+<hr>
+<h2><strong>معنى frontend line</strong></h2>
+<pre><code class="language-text">0.0.0.0:5173-\&gt;5173/tcp
+</code></pre>
+<p>يعني تفتح:</p>
+<pre><code class="language-text">[http://localhost:5173](http://localhost:5173/)
+</code></pre>
+<p>أو في حالتك:</p>
+<pre><code class="language-text">[http://localhost:5173/session-authoring-tool/](http://localhost:5173/session-authoring-tool/)
+</code></pre>
+<hr>
+<h2><strong>ليه <code>localhost:5010/session-authoring-tool/</code> طلع رسالة؟</strong></h2>
+<p>لأن <code>5010</code> كان backend.</p>
+<p>والـ backend قالك:</p>
+<pre><code class="language-text">Frontend bundle not found
+</code></pre>
+<p>يعني هو API server، ومش معاه ملفات frontend المبنية.</p>
+<p>لكن frontend كان على:</p>
+<pre><code class="language-text">5173
+</code></pre>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>الـ port الخارجي هو اللي بتفتحه في المتصفح.</p>
+<pre><code class="language-text">5010 = backend  
+5173 = frontend  
+</code></pre>
+<p>فلو عايز التطبيق المرئي، افتح frontend.</p>
+<p>لو عايز API، افتح backend.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثاني: تطبيق المفاهيم على مشروعك</h1>
+</div>
+<h1><strong>4. مثال من مشروعك</strong></h1>
+
+<p>أنت عندك صورتين اتبنوا:</p>
+<pre><code class="language-text">session-authoring-tool-backend  
+session-authoring-tool-frontend  
+</code></pre>
+<p>وشغالين كـ containers:</p>
+<pre><code class="language-text">session-authoring-tool-backend-1  
+session-authoring-tool-frontend-1
+</code></pre>
+<p>لما عملت:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>ظهر:</p>
+<pre><code class="language-text">NAME                            	IMAGE                         	SERVICE	STATUS               	PORTS  
+session-authoring-tool-backend-1	session-authoring-tool-backend	backend	Up 6 minutes (healthy)   0.0.0.0:5010-&gt;5000/tcp  
+session-authoring-tool-frontend-1   session-authoring-tool-frontend   frontend   Up 6 minutes         	0.0.0.0:5173-&gt;5173/tcp
+</code></pre>
+<p>ده معناه:</p>
+<ul>
+<li>عندك service اسمها <code>backend</code>  </li>
+<li>عندك service اسمها <code>frontend</code>  </li>
+<li>backend شغال على port داخلي <code>5000</code>  </li>
+<li>لكنه متاح عندك على الجهاز من port <code>5010</code>  </li>
+<li>frontend شغال ومتاح على port <code>5173</code></li>
+</ul>
+<hr>
+<h1><strong>19. فهم Dockerfile بسرعة</strong></h1>
+
+<p>خلينا نشرح Dockerfile بتاع backend بشكل عام.</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+</code></pre>
+<p>ابدأ من image جاهزة فيها TeX Live.</p>
+<hr>
+<pre><code class="language-dockerfile">ENV DEBIAN_FRONTEND=noninteractive
+</code></pre>
+<p>خلي أوامر Debian لا تسأل أسئلة أثناء التثبيت.</p>
+<p>مفيد في Docker لأن مفيش حد يرد على prompt.</p>
+<hr>
+<pre><code class="language-dockerfile">WORKDIR /app
+</code></pre>
+<p>أي أوامر بعد كده تشتغل من داخل فولدر:</p>
+<pre><code class="language-text">/app
+</code></pre>
+<p>لو الفولدر مش موجود، Docker يعمله.</p>
+<hr>
+<pre><code class="language-dockerfile">RUN ...
+</code></pre>
+<p>نفذ أمر أثناء بناء image.</p>
+<p>مثلاً install packages.</p>
+<hr>
+<pre><code class="language-text">COPY requirements.txt .
+</code></pre>
+<p>انسخ <code>requirements.txt</code> من جهازك إلى <code>/app/requirements.txt</code> داخل image.</p>
+<p>النقطة <code>.</code> معناها المكان الحالي داخل image، وهو <code>/app</code>.</p>
+<hr>
+<pre><code class="language-dockerfile">RUN python3.13 -m venv /opt/venv
+</code></pre>
+<p>اعمل virtual environment في:</p>
+<pre><code class="language-text">/opt/venv
+</code></pre>
+<hr>
+<pre><code class="language-dockerfile">ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+</code></pre>
+<p>خلي أوامر زي:</p>
+<pre><code class="language-bash">python  
+pip  
+gunicorn
+</code></pre>
+<p>تستخدم اللي جوه venv الأول.</p>
+<hr>
+<pre><code class="language-text">EXPOSE 5000
+</code></pre>
+<p>توثيق إن التطبيق بيسمع على port 5000 داخل container.</p>
+<p>مهم: <code>EXPOSE</code> لوحدها لا تفتح port على جهازك.<br> الفتح الحقيقي بيكون في compose بـ <code>ports</code>.</p>
+<hr>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>ده الأمر اللي يتنفذ لما container يشتغل.</p>
+<p>معناه:</p>
+<p>شغل Gunicorn على:</p>
+<pre><code class="language-text">0.0.0.0:5000
+</code></pre>
+<p>واستخدم Flask app من:</p>
+<pre><code class="language-text">app:app
+</code></pre>
+<p>غالبًا:</p>
+<ul>
+<li><code>app</code> الأولى = اسم ملف Python <code>app.py</code>  </li>
+<li><code>app</code> الثانية = اسم متغير Flask app داخل الملف</li>
+</ul>
+<hr>
+<h1><strong>18. قراءة Docker build logs</strong></h1>
+
+<p>أنت شوفت logs زي:</p>
+<pre><code class="language-dockerfile">#8 [3/6] RUN ...  
+#9 [4/6] COPY requirements.txt .  
+#10 [5/6] RUN python3.13 -m venv ...
+</code></pre>
+<h2><strong>معنى <code>[3/6]</code></strong></h2>
+<p>يعني الخطوة رقم 3 من 6 خطوات في build stage.</p>
+<hr>
+<h2><strong>مثال</strong></h2>
+<pre><code class="language-dockerfile">#8 [3/6] RUN set -eux; ...
+</code></pre>
+<p>يعني Docker ينفذ أمر <code>RUN</code> في Dockerfile.</p>
+<hr>
+<h2><strong><code>DONE</code></strong></h2>
+<p>مثال:</p>
+<pre><code class="language-text">\#8 DONE 1243.7s
+</code></pre>
+<p>يعني الخطوة خلصت ونجحت.</p>
+<hr>
+<h2><strong><code>ERROR</code></strong></h2>
+<p>لو ظهر:</p>
+<pre><code class="language-text">ERROR [backend 3/6]
+</code></pre>
+<p>يبقى الخطوة دي فشلت.</p>
+<hr>
+<h2><strong>ازاي تعرف سبب الخطأ؟</strong></h2>
+<p>دور على أول error حقيقي، مش آخر ملخص.</p>
+<p>مثلاً كان عندك:</p>
+<pre><code class="language-text">Temporary failure resolving &#39;deb.debian.org&#39;
+</code></pre>
+<p>ده السبب الحقيقي القديم.</p>
+<p>وبعدها كان:</p>
+<pre><code class="language-text">Package has no installation candidate  
+</code></pre>
+<p>ده كان أثر جانبي لأن <code>apt-get update</code> فشل.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثالث: أوامر Docker و Docker Compose (شرح تفصيلي)</h1>
+</div>
+<h1><strong>5. شرح أمر <code>docker compose ps</code></strong></h1>
+
+<p>الأمر:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<h2><strong>تفكيك الأمر</strong></h2>
+<pre><code class="language-text">docker
+</code></pre>
+<p>ده برنامج Docker نفسه.</p>
+<pre><code class="language-text">compose
+</code></pre>
+<p>ده subcommand خاص بتشغيل مشاريع فيها أكتر من service.</p>
+<pre><code class="language-text">ps
+</code></pre>
+<p>اختصار process status.<br> يعني اعرض حالة containers الخاصة بالمشروع الحالي.</p>
+<hr>
+<h2><strong>الناتج يعني إيه؟</strong></h2>
+<p>مثال:</p>
+<pre><code class="language-text">NAME                            	IMAGE                         	COMMAND              	SERVICE	CREATED     	STATUS               	PORTS  
+session-authoring-tool-backend-1	session-authoring-tool-backend	&quot;gunicorn --bind 0.0…&quot;   backend	6 minutes ago   Up 6 minutes (healthy)   0.0.0.0:5010-&gt;5000/tcp  
+session-authoring-tool-frontend-1   session-authoring-tool-frontend   &quot;/docker-entrypoint.…&quot;   frontend   6 minutes ago   Up 6 minutes         	0.0.0.0:5173-&gt;5173/tcp
+</code></pre>
+<h2><strong>شرح الأعمدة</strong></h2>
+<h3><strong>NAME</strong></h3>
+<p>اسم الـ container الحقيقي.</p>
+<p>مثال:</p>
+<pre><code class="language-text">session-authoring-tool-backend-1
+</code></pre>
+<p>Compose بيسمي containers غالبًا بالشكل ده:</p>
+<pre><code class="language-text">project-service-number
+</code></pre>
+<hr>
+<h3><strong>IMAGE</strong></h3>
+<p>اسم الـ image اللي container اتعمل منها.</p>
+<p>مثال:</p>
+<pre><code class="language-text">session-authoring-tool-backend
+</code></pre>
+<hr>
+<h3><strong>COMMAND</strong></h3>
+<p>الأمر اللي شغال جوه الـ container.</p>
+<p>في backend ظهر:</p>
+<pre><code class="language-text">gunicorn --bind 0.0...
+</code></pre>
+<p>يعني backend بيشتغل بـ Gunicorn.</p>
+<hr>
+<h3><strong>SERVICE</strong></h3>
+<p>اسم الخدمة في <code>docker-compose.yml</code>.</p>
+<p>مثال:</p>
+<pre><code class="language-text">backend  
+frontend  
+</code></pre>
+<hr>
+<h3><strong>STATUS</strong></h3>
+<p>حالة الـ container.</p>
+<p>مثال:</p>
+<pre><code class="language-text">Up 6 minutes (healthy)
+</code></pre>
+<p>يعني شغال بقاله 6 دقايق، والـ healthcheck ناجح.</p>
+<hr>
+<h3><strong>PORTS</strong></h3>
+<p>أهم جزء غالبًا.</p>
+<p>مثال:</p>
+<pre><code class="language-text">0.0.0.0:5010-&gt;5000/tcp
+</code></pre>
+<p>معناها:</p>
+<p>localhost:5010 على جهازك<br>رايح إلى<br>port 5000 جوه container</p>
+<p><a href="http://localhost:5010">http://localhost:5010</a></p>
+<p>أنت بتدخل على backend container جوه port 5000.</p>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>السطر ده:</p>
+<pre><code class="language-text">0.0.0.0:5010-&gt;5000/tcp
+</code></pre>
+<p>اقرأه كده:</p>
+<p>أي request ييجي على جهازك على port 5010، Docker يبعته لجوه container على port 5000.</p>
+<hr>
+<h1><strong>6. شرح <code>docker compose up</code></strong></h1>
+
+<p>الأمر:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>ده أهم أمر يومي تقريبًا.</p>
+<h2><strong>بيعمل إيه؟</strong></h2>
+<p>بيقرأ ملف:</p>
+<pre><code class="language-text">docker-compose.yml
+</code></pre>
+<p>وبعدين:</p>
+<ol>
+<li>يشوف الخدمات المطلوبة  </li>
+<li>يتأكد إن الصور موجودة  </li>
+<li>يعمل network للمشروع  </li>
+<li>ينشئ containers  </li>
+<li>يشغلهم  </li>
+<li>يعرض logs في نفس التيرمينال</li>
+</ol>
+<hr>
+<h2><strong>مثال من اللي حصل معاك</strong></h2>
+<p>لما كتبت:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>طلع:</p>
+<pre><code class="language-text">[+] up 3/3  
+✔ Network session-authoring-tool_default  	Created  
+✔ Container session-authoring-tool-backend-1  Created  
+✔ Container session-authoring-tool-frontend-1 Created
+</code></pre>
+<p>ده معناه:</p>
+<h3><strong>Network اتعملت</strong></h3>
+<pre><code class="language-text">session-authoring-tool_default
+</code></pre>
+<p>دي شبكة داخلية بين containers.</p>
+<p>الـ frontend يقدر يكلم backend من خلالها.</p>
+<hr>
+<h3><strong>Backend container اتعمل</strong></h3>
+<pre><code class="language-text">session-authoring-tool-backend-1
+</code></pre>
+<hr>
+<h3><strong>Frontend container اتعمل</strong></h3>
+<pre><code class="language-text">session-authoring-tool-frontend-1
+</code></pre>
+<hr>
+<h2><strong>بعد كده بدأ يعرض logs</strong></h2>
+<p>مثال:</p>
+<pre><code class="language-text">backend-1  | [INFO] Starting gunicorn 23.0.0  
+backend-1  | [INFO] Listening at: [http://0.0.0.0:5000](http://0.0.0.0:5000/)
+</code></pre>
+<p>معناه backend اشتغل.</p>
+<hr>
+<h1><strong>7. الفرق بين <code>docker compose up</code> و <code>docker compose up --build</code></strong></h1>
+
+<h2><strong>الأمر العادي</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>ده يشغل containers من images الموجودة.</p>
+<p>لو image موجودة ومبنية قبل كده، هيستخدمها.</p>
+<hr>
+<h2><strong>الأمر مع build</strong></h2>
+<pre><code class="language-bash">docker compose up --build
+</code></pre>
+<p>ده بيقول:</p>
+<p>قبل ما تشغل، ابني الصور لو محتاجة build.</p>
+<p>مفيد لو عدلت في Dockerfile أو dependencies.</p>
+<hr>
+<h2><strong>إمتى تستخدم كل واحد؟</strong></h2>
+<h3><strong>استخدم ده في التشغيل اليومي</strong></h3>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<h3><strong>استخدم ده لو عدلت Dockerfile أو package files</strong></h3>
+<pre><code class="language-bash">docker compose up --build
+</code></pre>
+<h3><strong>تجنب ده إلا للضرورة</strong></h3>
+<pre><code class="language-bash">docker compose build --no-cache
+</code></pre>
+<p>لأن <code>--no-cache</code> بيجبر Docker يعيد كل حاجة من الأول.</p>
+<p>وفي حالتك ده كان بيخلي التحميل ياخد وقت طويل جدًا.</p>
+<hr>
+<h1><strong>8. شرح <code>docker compose build</code></strong></h1>
+
+<p>الأمر:</p>
+<pre><code class="language-bash">docker compose build
+</code></pre>
+<h2><strong>بيعمل إيه؟</strong></h2>
+<p>بيبني images الخاصة بالخدمات، لكنه لا يشغل containers.</p>
+<p>يعني:</p>
+<pre><code class="language-bash">docker compose build
+</code></pre>
+<p>يبني.</p>
+<p>لكن:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>يشغل.</p>
+<hr>
+<h2><strong>مثال</strong></h2>
+<p>لو عندك:</p>
+<pre><code class="language-yaml">services:  
+  backend:  
+	build: ./backend
+
+  frontend:  
+	build: ./frontend
+</code></pre>
+<p>لما تعمل:</p>
+<pre><code class="language-bash">docker compose build
+</code></pre>
+<p>هيبني:</p>
+<pre><code class="language-text">backend image  
+frontend image  
+</code></pre>
+<hr>
+<h2><strong>بناء خدمة واحدة فقط</strong></h2>
+<p>لو عايز تبني backend فقط:</p>
+<pre><code class="language-bash">docker compose build backend
+</code></pre>
+<p>لو عايز frontend فقط:</p>
+<pre><code class="language-bash">docker compose build frontend
+</code></pre>
+<p>ده مهم جدًا عشان توفر وقت.</p>
+<hr>
+<h2><strong>الأمر اللي استخدمته</strong></h2>
+<pre><code class="language-bash">docker compose build --no-cache --progress=plain backend
+</code></pre>
+<p>خلينا نفصله.</p>
+<hr>
+<h3><strong><code>docker</code></strong></h3>
+<p>برنامج Docker.</p>
+<h3><strong><code>compose</code></strong></h3>
+<p>استخدم Docker Compose.</p>
+<h3><strong><code>build</code></strong></h3>
+<p>ابني image.</p>
+<h3><strong><code>--no-cache</code></strong></h3>
+<p>لا تستخدم الكاش القديم.</p>
+<p>يعني كل خطوة في Dockerfile تتعاد من الصفر.</p>
+<p>وده سبب إن عندك التحميل اتعاد وبقى بطيء.</p>
+<h3><strong><code>--progress=plain</code></strong></h3>
+<p>اعرض logs بشكل مفصل وواضح.</p>
+<p>هو قالك:</p>
+<pre><code class="language-text">--progress is a global compose flag
+</code></pre>
+<p>يعني الأفضل تكتبها كده:</p>
+<pre><code class="language-bash">docker compose --progress=plain build --no-cache backend
+</code></pre>
+<h3><strong><code>backend</code></strong></h3>
+<p>ابني خدمة backend فقط.</p>
+<hr>
+<h2><strong>الصيغة الأفضل</strong></h2>
+<pre><code class="language-bash">docker compose --progress=plain build backend
+</code></pre>
+<p>ولو مضطر تلغي الكاش:</p>
+<pre><code class="language-bash">docker compose --progress=plain build --no-cache backend  
+</code></pre>
+<hr>
+<h1><strong>9. Docker Cache يعني إيه؟</strong></h1>
+
+<p>Docker بيبني الـ image على خطوات اسمها layers.</p>
+<p>مثلاً Dockerfile:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest  
+WORKDIR /app  
+RUN apt-get update &amp;&amp; apt-get install ...  
+COPY requirements.txt .  
+RUN pip install -r requirements.txt  
+COPY . .
+</code></pre>
+<p>كل سطر تقريبًا بيعمل layer.</p>
+<p>لو Docker لقى إن السطر ومحتواه متغيروش، يستخدم الكاش بدل ما يعيد الخطوة.</p>
+<hr>
+<h2><strong>مثال</strong></h2>
+<p>لو <code>requirements.txt</code> متغيرش، Docker ممكن يستخدم كاش لخطوة:</p>
+<pre><code class="language-dockerfile">RUN pip install -r requirements.txt
+</code></pre>
+<p>وده يوفر وقت كبير.</p>
+<hr>
+<h2><strong>ليه <code>--no-cache</code> خطر في حالتك؟</strong></h2>
+<p>لأنك عندك تحميل apt و pip بطيء جدًا.</p>
+<p>شفنا:</p>
+<pre><code class="language-text">Fetched 9942 kB in 13min 19s
+</code></pre>
+<p>وكمان pip نزل ملفات كبيرة زي:</p>
+<pre><code class="language-text">numpy  
+pandas  
+pymupdf
+</code></pre>
+<p>فلو عملت:</p>
+<pre><code class="language-text">--no-cache
+</code></pre>
+<p>هتعيد ده كله.</p>
+<hr>
+<h2><strong>قاعدة ذهبية</strong></h2>
+<p>استخدم:</p>
+<pre><code class="language-bash">docker compose build backend
+</code></pre>
+<p>ولا تستخدم:</p>
+<pre><code class="language-bash">docker compose build --no-cache backend
+</code></pre>
+<p>إلا لو:</p>
+<ul>
+<li>الكاش بايظ  </li>
+<li>غيرت حاجة في base image  </li>
+<li>عايز تتأكد إن كل حاجة fresh  </li>
+<li>في dependency مش بتتحدث</li>
+</ul>
+<hr>
+<h1><strong>10. شرح <code>docker compose down</code></strong></h1>
+
+<p>الأمر:</p>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<h2><strong>بيعمل إيه؟</strong></h2>
+<p>بيوقف ويمسح containers والشبكة الخاصة بالمشروع.</p>
+<p>يعني:</p>
+<ul>
+<li>يوقف backend container  </li>
+<li>يوقف frontend container  </li>
+<li>يمسحهم  </li>
+<li>يمسح network اللي Compose عملها</li>
+</ul>
+<p>لكن غالبًا لا يمسح images.</p>
+<hr>
+<h2><strong>الفرق بين Ctrl+C و down</strong></h2>
+<p>لو <code>docker compose up</code> شغال في التيرمينال، تضغط:</p>
+<pre><code class="language-text">Ctrl + C
+</code></pre>
+<p>ده يوقف التشغيل الحالي.</p>
+<p>لكن ممكن containers تفضل موجودة بحالة stopped.</p>
+<p>أما:</p>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<p>ينظف containers والشبكات.</p>
+<hr>
+<h2><strong>متى أستخدم down؟</strong></h2>
+<p>لما تخلص شغل على المشروع:</p>
+<pre><code class="language-bash">docker compose down  
+</code></pre>
+<hr>
+<h2><strong>هل يمسح البيانات؟</strong></h2>
+<p>لو عندك volumes، الأمر العادي:</p>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<p>لا يمسح volumes غالبًا.</p>
+<p>لكن لو كتبت:</p>
+<pre><code class="language-bash">docker compose down -v
+</code></pre>
+<p>ده يمسح volumes كمان.</p>
+<p>خلي بالك من <code>-v</code>.</p>
+<hr>
+<h1><strong>11. شرح <code>docker compose logs</code></strong></h1>
+
+<p>لو المشروع شغال في الخلفية أو عايز تشوف logs:</p>
+<pre><code class="language-bash">docker compose logs
+</code></pre>
+<h2><strong>Logs لخدمة معينة</strong></h2>
+<pre><code class="language-bash">docker compose logs backend
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-bash">docker compose logs frontend
+</code></pre>
+<h2><strong>متابعة logs مباشرة</strong></h2>
+<pre><code class="language-bash">docker compose logs -f
+</code></pre>
+<p><code>-f</code> معناها follow.<br> يعني يفضل يعرض logs الجديدة أول بأول.</p>
+<hr>
+<h2><strong>مثال مهم</strong></h2>
+<p>لو frontend مش فاتح، تعمل:</p>
+<pre><code class="language-bash">docker compose logs frontend
+</code></pre>
+<p>لو backend بيقع:</p>
+<pre><code class="language-bash">docker compose logs backend
+</code></pre>
+<hr>
+<h1><strong>12. شرح <code>docker compose restart</code></strong></h1>
+
+<p>الأمر:</p>
+<pre><code class="language-bash">docker compose restart  
+</code></pre>
+<p>بيعمل restart لكل services.</p>
+<p>ولو عايز خدمة واحدة:</p>
+<pre><code class="language-bash">docker compose restart backend
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-bash">docker compose restart frontend
+</code></pre>
+<hr>
+<h2><strong>إمتى أستخدمه؟</strong></h2>
+<p>لو غيرت env vars خارجية، أو service علقت، أو عايز restart سريع من غير rebuild.</p>
+<p>لكن لو غيرت الكود جوه image ومفيش volume، غالبًا تحتاج rebuild.</p>
+<hr>
+<h1><strong>13. شرح <code>docker run</code></strong></h1>
+
+<p>الأمر ده بيشغل container من image واحدة، بدون Compose.</p>
+<p>مثال من اللي عملناه:</p>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<h2><strong>تفكيك الأمر</strong></h2>
+<pre><code class="language-text">docker
+</code></pre>
+<p>برنامج Docker.</p>
+<pre><code class="language-text">run
+</code></pre>
+<p>شغل container جديد.</p>
+<pre><code class="language-text">--rm
+</code></pre>
+<p>امسح container تلقائيًا بعد ما يخلص.</p>
+<pre><code class="language-text">busybox
+</code></pre>
+<p>اسم image خفيفة جدًا فيها أدوات Linux بسيطة.</p>
+<pre><code class="language-text">nslookup deb.debian.org
+</code></pre>
+<p>الأمر اللي يتنفذ جوه container.</p>
+<hr>
+<h2><strong>ليه استخدمنا <code>docker run</code>؟</strong></h2>
+<p>عشان نختبر Docker نفسه بعيدًا عن المشروع.</p>
+<p>مثلاً:</p>
+<pre><code class="language-bash">docker run --rm busybox ping -c 3 8.8.8.8
+</code></pre>
+<p>ده بيقول:</p>
+<p>هل container يقدر يوصل للإنترنت؟</p>
+<hr>
+<h2><strong>مثال آخر</strong></h2>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<p>تفكيكها:</p>
+<h3><strong><code>docker run</code></strong></h3>
+<p>شغل container.</p>
+<h3><strong><code>--rm</code></strong></h3>
+<p>امسحه بعد الانتهاء.</p>
+<h3><strong><code>debian:stable-slim</code></strong></h3>
+<p>استخدم Debian image.</p>
+<h3><strong><code>bash -lc</code></strong></h3>
+<p>شغل bash كـ login/command shell.</p>
+<h3><strong><code>&quot;apt-get update&quot;</code></strong></h3>
+<p>الأمر اللي يتنفذ داخل Debian container.</p>
+<hr>
+<h1><strong>14. شرح <code>docker exec</code></strong></h1>
+
+<p>لو container شغال وعايز تدخل جواه:</p>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<h2><strong>تفكيك الأمر</strong></h2>
+<pre><code class="language-bash">docker exec
+</code></pre>
+<p>نفذ أمر داخل container شغال.</p>
+<pre><code class="language-text">-it
+</code></pre>
+<p>اختصار:</p>
+<ul>
+<li><code>-i</code>: interactive  </li>
+<li><code>-t</code>: terminal</li>
+</ul>
+<p>يعني افتح جلسة تفاعلية.</p>
+<pre><code class="language-text">session-authoring-tool-backend-1
+</code></pre>
+<p>اسم container.</p>
+<pre><code class="language-text">bash
+</code></pre>
+<p>افتح bash shell.</p>
+<hr>
+<h2><strong>لو مفيش bash</strong></h2>
+<p>بعض images فيها <code>sh</code> فقط:</p>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-frontend-1 sh
+</code></pre>
+<hr>
+<h2><strong>إمتى أستخدمه؟</strong></h2>
+<p>لو عايز تشوف ملفات جوه container:</p>
+<pre><code class="language-text">ls  
+pwd  
+cat /etc/resolv.conf  
+python --version  
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الرابع: دليلك اليومي للعمل</h1>
+</div>
+<h1><strong>20. أهم أوامر يومية ليك</strong></h1>
+
+<h2><strong>تشغيل المشروع</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<hr>
+<h2><strong>تشغيل في الخلفية</strong></h2>
+<pre><code class="language-bash">docker compose up -d
+</code></pre>
+<p><code>-d</code> معناها detached mode.</p>
+<p>يعني يشغل containers ويرجعك للترمينال.</p>
+<hr>
+<h2><strong>رؤية الحالة</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<hr>
+<h2><strong>رؤية logs</strong></h2>
+<pre><code class="language-bash">docker compose logs
+</code></pre>
+<hr>
+<h2><strong>متابعة logs</strong></h2>
+<pre><code class="language-bash">docker compose logs -f
+</code></pre>
+<hr>
+<h2><strong>logs للـ backend</strong></h2>
+<pre><code class="language-bash">docker compose logs -f backend
+</code></pre>
+<hr>
+<h2><strong>logs للـ frontend</strong></h2>
+<pre><code class="language-bash">docker compose logs -f frontend
+</code></pre>
+<hr>
+<h2><strong>إيقاف وتنظيف</strong></h2>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<hr>
+<h2><strong>إعادة بناء backend فقط</strong></h2>
+<pre><code class="language-bash">docker compose build backend
+</code></pre>
+<hr>
+<h2><strong>إعادة بناء frontend فقط</strong></h2>
+<pre><code class="language-bash">docker compose build frontend
+</code></pre>
+<hr>
+<h2><strong>إعادة بناء وتشغيل</strong></h2>
+<pre><code class="language-bash">docker compose up --build
+</code></pre>
+<hr>
+<h2><strong>الدخول داخل backend container</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<hr>
+<h2><strong>الدخول داخل frontend container</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-frontend-1 sh
+</code></pre>
+<hr>
+<h1><strong>24. أوامر مهمة بصيغة Cheatsheet</strong></h1>
+
+<h2><strong>Start</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<h2><strong>Start in background</strong></h2>
+<pre><code class="language-bash">docker compose up -d
+</code></pre>
+<h2><strong>Stop and remove containers</strong></h2>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<h2><strong>Show running services</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<h2><strong>Build all services</strong></h2>
+<pre><code class="language-bash">docker compose build
+</code></pre>
+<h2><strong>Build backend only</strong></h2>
+<pre><code class="language-bash">docker compose build backend
+</code></pre>
+<h2><strong>Build frontend only</strong></h2>
+<pre><code class="language-bash">docker compose build frontend
+</code></pre>
+<h2><strong>Build and run</strong></h2>
+<pre><code class="language-bash">docker compose up --build
+</code></pre>
+<h2><strong>Logs</strong></h2>
+<pre><code class="language-bash">docker compose logs
+</code></pre>
+<h2><strong>Follow logs</strong></h2>
+<pre><code class="language-bash">docker compose logs -f
+</code></pre>
+<h2><strong>Backend logs</strong></h2>
+<pre><code class="language-bash">docker compose logs -f backend
+</code></pre>
+<h2><strong>Frontend logs</strong></h2>
+<pre><code class="language-bash">docker compose logs -f frontend
+</code></pre>
+<h2><strong>Enter backend</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<h2><strong>Enter frontend</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-frontend-1 sh
+</code></pre>
+<hr>
+<h1><strong>22. Checklist عند تشغيل أي مشروع Docker</strong></h1>
+
+<p>استخدم القائمة دي كل مرة.</p>
+<h2><strong>1. هل containers شغالة؟</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<hr>
+<h2><strong>2. هل backend healthy؟</strong></h2>
+<p>شوف status:</p>
+<pre><code class="language-text">Up ... (healthy)
+</code></pre>
+<hr>
+<h2><strong>3. أنهي port للـ frontend؟</strong></h2>
+<p>من:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>دور على service frontend.</p>
+<hr>
+<h2><strong>4. أنهي port للـ backend؟</strong></h2>
+<p>دور على service backend.</p>
+<hr>
+<h2><strong>5. لو الصفحة مش فاتحة</strong></h2>
+<p>شوف logs:</p>
+<pre><code class="language-bash">docker compose logs frontend
+</code></pre>
+<hr>
+<h2><strong>6. لو API مش شغال</strong></h2>
+<pre><code class="language-bash">docker compose logs backend
+</code></pre>
+<hr>
+<h2><strong>7. لو عدلت Dockerfile</strong></h2>
+<pre><code class="language-bash">docker compose build backend  
+docker compose up  
+</code></pre>
+<hr>
+<h1><strong>21. أخطاء شائعة جدًا</strong></h1>
+
+<h2><strong>21.1 فتحت backend بدل frontend</strong></h2>
+<p>لو فتحت:</p>
+<pre><code class="language-text">http://localhost:5010/session-authoring-tool/
+</code></pre>
+<p>وظهر:</p>
+<pre><code class="language-text">Frontend bundle not found
+</code></pre>
+<p>يبقى أنت فاتح backend.</p>
+<p>افتح frontend:</p>
+<pre><code class="language-text">http://localhost:5173/session-authoring-tool/
+</code></pre>
+<hr>
+<h2><strong>21.2 استخدمت <code>--no-cache</code> كتير</strong></h2>
+<p>ده يعيد التحميل من الصفر.</p>
+<p>تجنبه.</p>
+<hr>
+<h2><strong>21.3 افتكرت <code>pyenv</code> بيأثر على Docker</strong></h2>
+<p>لما تعمل:</p>
+<pre><code class="language-bash">pyenv shell 3.11.9  
+</code></pre>
+<p>ده يغير Python على جهازك فقط.</p>
+<p>لكن Docker يستخدم Python الموجود داخل image.</p>
+<hr>
+<h2><strong>21.4 package install فشل بعد <code>apt-get update</code> فشل</strong></h2>
+<p>لو شفت:</p>
+<pre><code class="language-text">Package has no installation candidate
+</code></pre>
+<p>متفترضش فورًا إن package مش موجودة.</p>
+<p>الأول شوف هل:</p>
+<pre><code class="language-text">apt-get update
+</code></pre>
+<p>نجح ولا لأ.</p>
+<hr>
+<h1><strong>25. الخلاصة التنفيذية</strong></h1>
+
+<p>في مشروعك تحديدًا:</p>
+<h2><strong>للتشغيل اليومي</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>وبعدين افتح:</p>
+<pre><code class="language-text">http://localhost:5173/session-authoring-tool/
+</code></pre>
+<hr>
+<h2><strong>لمعرفة الـ ports</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<hr>
+<h2><strong>لو عدلت backend</strong></h2>
+<pre><code class="language-bash">docker compose build backend  
+docker compose up  
+</code></pre>
+<hr>
+<h2><strong>لو عدلت frontend</strong></h2>
+<pre><code class="language-bash">docker compose build frontend  
+docker compose up  
+</code></pre>
+<hr>
+<h2><strong>لو عايز توقف كل حاجة</strong></h2>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<hr>
+<h1><strong>تبسيط سينيور نهائي</strong></h1>
+
+<p>Docker في مشروعك عامل زي مدير تشغيل.</p>
+<p>هو عنده ملف خطة:</p>
+<pre><code class="language-text">docker-compose.yml
+</code></pre>
+<p>وفي الخطة دي مكتوب:</p>
+<ul>
+<li>شغل backend  </li>
+<li>شغل frontend  </li>
+<li>اعمل network بينهم  </li>
+<li>افتح ports معينة على الجهاز</li>
+</ul>
+<p>الـ backend عندك كان على:</p>
+<pre><code class="language-text">localhost:5010
+</code></pre>
+<p>والـ frontend كان على:</p>
+<pre><code class="language-text">localhost:5173
+</code></pre>
+<p>أنت لما فتحت <code>5010</code> كنت بتكلم السيرفر الخلفي.<br> ولما فتحت <code>5173</code> وصلت للواجهة الصح.</p>
+<p>أهم عادة لازم تثبتها:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>قبل ما تفتح أي URL.</p>
+<p>لأنها بتقولك الحقيقة:</p>
+<ul>
+<li>مين شغال  </li>
+<li>على أنهي port  </li>
+<li>حالته إيه</li>
+</ul>
+<hr>
+<h2><strong>الواجب قبل Handbook 2</strong></h2>
+<p>نفذ دول واكتب ملاحظاتك:</p>
+<pre><code class="language-bash">docker compose ps
+
+docker compose logs backend --tail=20
+
+docker compose logs frontend --tail=20
+
+docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<p>وجوه الـ container:</p>
+<pre><code class="language-text">pwd  
+ls  
+python --version  
+which python  
+which gunicorn  
+exit
+</code></pre>
+<p>لو عملت التمارين دي، هتدخل Handbook 2 بتاع <strong>Docker DNS and Network Debugging</strong> وأنت فاهم الأرضية كويس جدًا.</p>
+
+    
+        <div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الخامس: التقييم والممارسة</h1>
+</div>
+<h1><strong>23. تمارين عملية</strong></h1>
+
+<h2><strong>تمرين 1: اعرض الخدمات</strong></h2>
+<p>نفذ:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>واكتب عندك:</p>
+<pre><code class="language-text">backend port \= ?  
+frontend port \= ?  
+</code></pre>
+<hr>
+<h2><strong>تمرين 2: افتح logs للـ backend</strong></h2>
+<pre><code class="language-bash">docker compose logs backend
+</code></pre>
+<p>دور على:</p>
+<pre><code class="language-text">Listening at
+</code></pre>
+<p>واكتب port الداخلي.</p>
+<hr>
+<h2><strong>تمرين 3: افتح logs للـ frontend</strong></h2>
+<pre><code class="language-bash">docker compose logs frontend
+</code></pre>
+<p>دور على:</p>
+<pre><code class="language-text">nginx
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-text">ready for start up
+</code></pre>
+<hr>
+<h2><strong>تمرين 4: ادخل جوه backend</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<p>ثم نفذ:</p>
+<pre><code class="language-text">pwd  
+ls  
+python --version  
+which python  
+which gunicorn
+</code></pre>
+<p>واخرج بـ:</p>
+<pre><code class="language-text">exit
+</code></pre>
+<hr>
+<h2><strong>تمرين 5: افهم port mapping</strong></h2>
+<p>من نتيجة:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>لو شفت:</p>
+<pre><code class="language-text">0.0.0.0:5010-\&gt;5000/tcp
+</code></pre>
+<p>جاوب:</p>
+<ul>
+<li>أفتح من المتصفح port كام؟  </li>
+<li>التطبيق جوه container سامع على port كام؟</li>
+</ul>
+<p>الإجابة:</p>
+<h2>المتصفح: 5010<br>داخل container: 5000</h2>
+<div class="nav-links">
+            <div></div>
+            <span>الجزء 1 من 4</span>
+            <a href="handbook2.html" class="btn">التالي</a>
+            <a href="index.html" class="btn btn-secondary">العودة للفهرس</a>
+        </div>
+  </div>
+  
+  <!-- Prism.js Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+</body>
+</html>

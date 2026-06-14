@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>فهرس أدلة مشروع Docker</title>
+  
+  <!-- Google Fonts: Cairo & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* java-spilet Theme Variables */
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-card-hover: rgba(30, 41, 59, 0.9);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-headings: #ffffff;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --primary-glow: rgba(56, 189, 248, 0.15);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --font-family-sans: 'Cairo', sans-serif;
+      --transition-speed: 0.3s;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-family-sans);
+      line-height: 1.8;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 40px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: var(--primary);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 15px;
+      margin-bottom: 30px;
+      font-weight: 900;
+    }
+
+    p {
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+      color: var(--text-muted);
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      text-align: right;
+    }
+
+    .toc-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border-color);
+      border-radius: 15px;
+      padding: 25px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toc-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary);
+      box-shadow: 0 5px 15px var(--primary-glow);
+      transform: translateY(-2px);
+    }
+
+    .toc-card h2 {
+      color: var(--success);
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+
+    .toc-card p {
+      color: var(--text-primary);
+      margin-bottom: 0;
+      font-size: 1rem;
+    }
+
+    .nav-actions {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      border-color: var(--primary);
+      background: var(--primary-glow);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>فهرس أدلة مشروع Docker</h1>
+    <p>مرحباً بك في السلسلة التعليمية المتكاملة لفهم وإتقان تشغيل المشروع باستخدام Docker و Docker Compose.</p>
+    
+    <div class="toc-grid">
+      <a href="handbook1.html" class="toc-card">
+        <h2>Handbook 1</h2>
+        <p>أساسيات Docker و Docker Compose للمشروع: من الصفر لحد تشغيل Backend + Frontend وفهم اللي بيحصل.</p>
+      </a>
+
+      <a href="handbook2.html" class="toc-card">
+        <h2>Handbook 2</h2>
+        <p>Docker DNS & Network Debugging: حل مشاكل الشبكات والاتصالات الداخلية.</p>
+      </a>
+
+      <a href="handbook3.html" class="toc-card">
+        <h2>Handbook 3</h2>
+        <p>Backend Dockerfile Deep Dive: تعمق في ملف Dockerfile الخاص بالـ Backend خطوة بخطوة.</p>
+      </a>
+
+      <a href="handbook4.html" class="toc-card">
+        <h2>Final Handbook</h2>
+        <p>Python venv + pip داخل Docker + تشغيل Full Stack + Optimization.</p>
+      </a>
+
+      <a href="handbook5.html" class="toc-card">
+        <h2>Handbook 5</h2>
+        <p>AWS S3 CLI Handbook: مرجع عملي شامل لإدارة ملفات S3 والربط مع Backend الآمن.</p>
+      </a>
+    </div>
+
+    <div class="nav-actions">
+      <a href="../index.html" class="btn">العودة للوحة المشاكل الرئيسية</a>
+    </div>
+  </div>
+</body>
+</html>

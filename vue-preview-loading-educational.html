@@ -5,59 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>شرح تعليمي: مشكلة Generating preview في Vue</title>
   
-  <!-- Google Fonts: Tajawal & JetBrains Mono -->
+  <!-- Google Fonts: Cairo & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   
   <style>
     /* CSS CSS Reset & Custom Design System */
     :root {
-      /* Dark Theme (Default) Variables */
-      --bg-main: #0b0f19;
-      --bg-card: #151c2c;
+      /* java-spilet Theme Variables */
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
       --bg-code: #0b0f19;
-      --bg-senior: #1e293b;
-      --border-color: #27354f;
-      --border-senior: #10b981;
-      --text-primary: #f3f4f6;
-      --text-muted: #9ca3af;
+      --bg-senior: rgba(30, 41, 59, 0.9);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-senior: #34d399;
+      --text-primary: #f8fafc;
+      --text-muted: #cbd5e1;
       --text-headings: #ffffff;
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
-      --primary-glow: rgba(79, 70, 229, 0.3);
-      --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.15);
-      --danger: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.15);
-      --warning: #f59e0b;
-      --warning-glow: rgba(245, 158, 11, 0.15);
-      --font-family-sans: 'Tajawal', sans-serif;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --primary-glow: rgba(56, 189, 248, 0.15);
+      --success: #34d399;
+      --success-glow: rgba(52, 211, 153, 0.15);
+      --danger: #f87171;
+      --danger-glow: rgba(248, 113, 113, 0.15);
+      --warning: #fbbf24;
+      --warning-glow: rgba(251, 191, 36, 0.15);
+      --font-family-sans: 'Cairo', sans-serif;
       --font-family-mono: 'JetBrains Mono', Consolas, monospace;
       --transition-speed: 0.3s;
     }
 
-    [data-theme="light"] {
-      /* Light Theme Variables */
-      --bg-main: #f8fafc;
-      --bg-card: #ffffff;
-      --bg-code: #1e293b; /* keep code dark for readability */
-      --bg-senior: #f0fdf4;
-      --border-color: #e2e8f0;
-      --border-senior: #a7f3d0;
-      --text-primary: #1e293b;
-      --text-muted: #64748b;
-      --text-headings: #0f172a;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --primary-glow: rgba(37, 99, 235, 0.1);
-      --success: #059669;
-      --success-glow: rgba(5, 150, 105, 0.1);
-      --danger: #dc2626;
-      --danger-glow: rgba(220, 38, 38, 0.1);
-      --warning: #d97706;
-      --warning-glow: rgba(217, 119, 6, 0.1);
-    }
+
 
     * {
       box-sizing: border-box;
@@ -72,6 +52,9 @@
       line-height: 1.8;
       transition: background-color var(--transition-speed), color var(--transition-speed);
       padding-top: 70px;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
     }
 
     /* Scrollbar Styling */
@@ -107,9 +90,7 @@
       transition: background-color var(--transition-speed), border-color var(--transition-speed);
     }
 
-    [data-theme="light"] .navbar {
-      background: rgba(255, 255, 255, 0.85);
-    }
+
 
     .navbar-title {
       font-size: 1.25rem;
@@ -120,23 +101,7 @@
       gap: 10px;
     }
 
-    .theme-toggle-btn {
-      background: transparent;
-      border: 1px solid var(--border-color);
-      padding: 8px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
 
-    .theme-toggle-btn:hover {
-      border-color: var(--primary);
-      background: var(--primary-glow);
-    }
 
     /* Reading Progress Bar */
     .progress-container {
@@ -810,11 +775,7 @@
     .token.number { color: #f59e0b; }
     .token.boolean { color: #fb7185; }
 
-    [data-theme="light"] .token.keyword { color: #db2777; }
-    [data-theme="light"] .token.attr-name { color: #2563eb; }
-    [data-theme="light"] .token.attr-value { color: #059669; }
-    [data-theme="light"] .token.tag { color: #dc2626; }
-    [data-theme="light"] .token.string { color: #047857; }
+
   </style>
 </head>
 <body>
@@ -825,9 +786,7 @@
       <span>🎓</span>
       <span>شرح مشكلة الـ Preview Loading في Vue</span>
     </div>
-    <button class="theme-toggle-btn" onclick="toggleTheme()" title="تغيير المظهر">
-      <svg id="theme-icon" width="20" height="20" fill="none" viewBox="0 0 24 24"></svg>
-    </button>
+
   </nav>
 
   <!-- Reading Progress Bar -->
@@ -1324,30 +1283,7 @@
   </div>
 
   <script>
-    // Theme Switcher Logic
-    function initTheme() {
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-      updateThemeIcon(savedTheme);
-    }
 
-    function toggleTheme() {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-      updateThemeIcon(newTheme);
-    }
-
-    function updateThemeIcon(theme) {
-      const icon = document.getElementById('theme-icon');
-      if (!icon) return;
-      if (theme === 'light') {
-        icon.innerHTML = `<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m11.314 11.314l.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
-      } else {
-        icon.innerHTML = `<path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
-      }
-    }
 
     // Tab Switcher for Simulator
     function switchTab(btn, tabId) {
@@ -1488,7 +1424,7 @@
     });
 
     // Run setup on load
-    initTheme();
+
   </script>
 </body>
 </html>

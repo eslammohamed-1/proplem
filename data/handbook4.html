@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Final Handbook — Python venv + pip داخل Docker + تشغيل Full Stack + Optimization</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-code: #0b0f19;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-headings: #ffffff;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --font-family-sans: 'Cairo', sans-serif;
+      --font-family-mono: 'JetBrains Mono', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-family-sans);
+      line-height: 1.8;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 40px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    h1, h2, h3, h4, h5, h6 { color: var(--text-headings); margin-top: 2rem; margin-bottom: 1rem; font-weight: 800; }
+    h1 { font-size: 2.2rem; color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+    h2 { font-size: 1.8rem; }
+    h3 { font-size: 1.4rem; color: var(--success); }
+    p { margin-bottom: 1.2rem; font-size: 1.1rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul, ol { margin-bottom: 1.5rem; padding-right: 2rem; }
+    li { margin-bottom: 0.5rem; font-size: 1.1rem; }
+
+    /* Professional Code Formatting */
+    pre {
+      background: var(--bg-code) !important;
+      border: 1px solid var(--border-color) !important;
+      border-left: 4px solid var(--success) !important;
+      border-radius: 12px !important;
+      padding: 20px !important;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      direction: ltr !important;
+      text-align: left !important;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    pre code {
+      font-family: var(--font-family-mono) !important;
+      font-size: 1rem !important;
+      color: var(--text-primary) !important;
+      display: block;
+      line-height: 1.6;
+    }
+    p code, li code {
+      background: rgba(255, 255, 255, 0.1);
+      font-family: var(--font-family-mono);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--warning);
+      font-size: 0.95rem;
+      direction: ltr;
+      display: inline-block;
+    }
+    hr { border: none; border-top: 1px solid var(--border-color); margin: 2.5rem 0; }
+    blockquote {
+      background: rgba(56, 189, 248, 0.05);
+      border-right: 4px solid var(--primary);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 10px 10px 0;
+      font-size: 1.15rem;
+    }
+    .nav-links {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);
+      flex-wrap: wrap; gap: 15px;
+    }
+    .btn { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: bold; transition: all 0.3s; text-align: center; }
+    .btn.btn-secondary { background: transparent; border: 1px solid var(--border-color); }
+    .btn:hover { background: var(--primary-hover); text-decoration: none; transform: translateY(-2px); }
+    img { max-width: 100%; border-radius: 10px; }
+  <!-- Prism.js for syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <h1><strong>Final Handbook — Python venv + pip داخل Docker + تشغيل Full Stack + Optimization</strong></h1>
+<h2><strong>الهاند بوك النهائي لتقفيل السلسلة</strong></h2>
+<p>الهاند بوك ده هيغطي 3 أجزاء كبار:</p>
+<ol>
+<li><strong>Python Virtual Environment و pip داخل Docker</strong>  </li>
+<li><strong>تشغيل المشروع كاملًا: Backend + Frontend + Ports + Logs</strong>  </li>
+<li><strong>Optimization وتسريع Docker Builds وتريكات Senior</strong></li>
+</ol>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الأول: إدارة بيئة بايثون (Python venv & pip)</h1>
+</div>
+<h1><strong>Part 1 — Python venv و pip داخل Docker</strong></h1>
+
+<h2><strong>1. السطر الأساسي عندك</strong></h2>
+<p>في Dockerfile عندك:</p>
+<pre><code class="language-dockerfile">RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+</code></pre>
+<p>ده من أهم أسطر الـ backend image.</p>
+<p>خلينا نفهمه جزء جزء.</p>
+<hr>
+<h1><strong>2. يعني إيه Virtual Environment؟</strong></h1>
+
+<p>الـ virtual environment أو <code>venv</code> هي بيئة Python مستقلة.</p>
+<p>بدل ما تثبت packages في Python النظام، بتثبتها في فولدر مخصوص.</p>
+<p>في مشروعك:</p>
+<pre><code class="language-text">/opt/venv
+</code></pre>
+<p>يعني كل packages زي:</p>
+<pre><code class="language-text">flask  
+gunicorn  
+pandas  
+numpy  
+pymupdf  
+requests
+</code></pre>
+<p>اتثبتت داخل:</p>
+<pre><code class="language-text">/opt/venv/lib/python3.13/site-packages
+</code></pre>
+<hr>
+<h2><strong>ليه نعمل venv داخل Docker؟</strong></h2>
+<p>سؤال مهم جدًا.</p>
+<p>ممكن تقول:</p>
+<p>Docker أصلًا isolated، ليه أعمل venv جوه Docker؟</p>
+<p>الإجابة: مش إجباري، لكنه مفيد جدًا.</p>
+<h3><strong>فوائد venv داخل Docker</strong></h3>
+<ol>
+<li>يفصل Python packages الخاصة بالتطبيق عن Python النظام.  </li>
+<li>يقلل مشاكل Debian system packages.  </li>
+<li>يخلي <code>gunicorn</code> و <code>flask</code> واضحين إنهم تابعين للتطبيق.  </li>
+<li>يسهل التحكم في PATH.  </li>
+<li>يخلي البيئة أنضف وأكثر قابلية للتوقع.</li>
+</ol>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>Docker هو شقة مستقلة.<br> والـ venv هو أوضة مستقلة جوه الشقة.</p>
+<p>ممكن تعيش في الشقة كلها، لكن الأوضة بتخلي حاجتك مترتبة ومفصولة.</p>
+<hr>
+<h1><strong>3. شرح الأمر</strong></h1>
+
+<pre><code class="language-text">python3.13 -m venv /opt/venv
+</code></pre>
+<h2><strong><code>python3.13</code></strong></h2>
+<p>استخدم Python 3.13.</p>
+<p>في حالتك كان موجود أصلًا داخل image:</p>
+<pre><code class="language-text">texlive/texlive:latest
+</code></pre>
+<hr>
+<h2><strong><code>-m</code></strong></h2>
+<p>معناها:</p>
+<p>شغل module من Python.</p>
+<hr>
+<h2><strong><code>venv</code></strong></h2>
+<p>دي module مسؤولة عن إنشاء virtual environments.</p>
+<hr>
+<h2><strong><code>/opt/venv</code></strong></h2>
+<p>ده المكان اللي هيتم فيه إنشاء البيئة.</p>
+<p>بعد الأمر ده، هيظهر فولدر:</p>
+<pre><code class="language-text">/opt/venv
+</code></pre>
+<p>جواه:</p>
+<pre><code class="language-text">bin/  
+lib/  
+pyvenv.cfg
+</code></pre>
+<p>أهم فولدر:</p>
+<pre><code class="language-text">/opt/venv/bin
+</code></pre>
+<p>لأنه يحتوي على:</p>
+<pre><code class="language-bash">python  
+pip  
+gunicorn  
+flask  
+</code></pre>
+<hr>
+<h1><strong>4. لماذا احتجنا <code>python3.13-venv</code>؟</strong></h1>
+
+<p>لأن الأمر:</p>
+<pre><code class="language-text">python3.13 -m venv /opt/venv
+</code></pre>
+<p>محتاج package من Debian اسمها:</p>
+<pre><code class="language-text">python3.13-venv
+</code></pre>
+<p>بدونها ممكن يظهر error متعلق بـ:</p>
+<pre><code class="language-text">ensurepip
+</code></pre>
+<p>أو إن <code>venv</code> غير متاح بشكل كامل.</p>
+<p>وده سبب إننا ثبتنا:</p>
+<pre><code class="language-text">python3.13-venv
+</code></pre>
+<hr>
+<h1><strong>5. شرح pip upgrade</strong></h1>
+
+<pre><code class="language-text">/opt/venv/bin/pip install --upgrade pip setuptools wheel
+</code></pre>
+<h2><strong>ليه كتبنا <code>/opt/venv/bin/pip</code>؟</strong></h2>
+<p>عشان نضمن إننا بنستخدم pip اللي جوه venv، مش pip النظام.</p>
+<p>لو كتبت:</p>
+<pre><code class="language-text">pip install ...
+</code></pre>
+<p>قبل ما نعدل PATH، ممكن النظام يستخدم pip تاني.</p>
+<p>لكن:</p>
+<pre><code class="language-text">/opt/venv/bin/pip
+</code></pre>
+<p>واضحة وصريحة.</p>
+<hr>
+<h2><strong>packages دي إيه؟</strong></h2>
+<h3><strong><code>pip</code></strong></h3>
+<p>مدير تثبيت Python packages.</p>
+<hr>
+<h3><strong><code>setuptools</code></strong></h3>
+<p>أداة مهمة لبناء وتثبيت بعض Python packages.</p>
+<hr>
+<h3><strong><code>wheel</code></strong></h3>
+<p>صيغة جاهزة لـ Python packages.</p>
+<p>لما package تكون wheel، تثبيتها أسرع لأنها مش بتحتاج build من source.</p>
+<hr>
+<h2><strong>ليه نحدثهم؟</strong></h2>
+<p>لأن بعض packages الكبيرة أو الحديثة تحتاج tooling حديث.</p>
+<p>خصوصًا packages زي:</p>
+<pre><code class="language-text">numpy  
+pandas  
+pymupdf  
+</code></pre>
+<hr>
+<h1><strong>6. شرح install requirements</strong></h1>
+
+<pre><code class="language-text">/opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+</code></pre>
+<h2><strong><code>-r requirements.txt</code></strong></h2>
+<p>معناها:</p>
+<p>ثبت كل packages الموجودة في ملف requirements.txt.</p>
+<p>مثال:</p>
+<pre><code class="language-text">flask==3.1.3  
+gunicorn==23.0.0  
+numpy==2.4.4  
+pandas==3.0.3  
+pymupdf==1.27.2.3  
+</code></pre>
+<hr>
+<h2><strong><code>--no-cache-dir</code></strong></h2>
+<p>بتقول لـ pip:</p>
+<p>متخزنش download cache داخل image.</p>
+<p>ده يقلل حجم image.</p>
+<hr>
+<h2><strong>هل <code>--no-cache-dir</code> دايمًا أحسن؟</strong></h2>
+<p>في Docker images غالبًا نعم لتقليل الحجم.</p>
+<p>لكن في حالتك الإنترنت بطيء، فممكن في optimization نستخدم Docker BuildKit cache mount بدل pip cache العادي.</p>
+<hr>
+<h1><strong>7. لماذا <code>pip install</code> كان بطيء؟</strong></h1>
+
+<p>في logs عندك ظهرت packages كبيرة:</p>
+<pre><code class="language-text">numpy 15.7 MB  
+pandas 10.4 MB  
+pymupdf 24.3 MB
+</code></pre>
+<p>والتحميل كان بسرعات قليلة جدًا:</p>
+<pre><code class="language-text">35 kB/s  
+200 kB/s
+</code></pre>
+<p>فطبيعي خطوة pip تأخذ وقت طويل.</p>
+<hr>
+<h1><strong>8. أهمية ترتيب Dockerfile مع pip</strong></h1>
+
+<p>الترتيب الحالي ممتاز:</p>
+<pre><code class="language-text">COPY requirements.txt .
+
+RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+</code></pre>
+<p>ليه؟</p>
+<p>لأن Docker هيعمل cache لخطوة pip طالما <code>requirements.txt</code> متغيرش.</p>
+<p>لو غيرت كود Python فقط، Docker مش هيعيد pip install.</p>
+<hr>
+<h2><strong>الغلط الشائع</strong></h2>
+<pre><code class="language-text">COPY . .
+
+RUN pip install -r requirements.txt
+</code></pre>
+<p>ده وحش لأن أي تغيير في أي ملف يكسر cache ويعيد pip install.</p>
+<hr>
+<h1><strong>9. ENV PATH</strong></h1>
+
+<pre><code class="language-dockerfile">ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+</code></pre>
+<p>ده معناه:</p>
+<p>لما container يدور على أوامر زي <code>python</code>, <code>pip</code>, <code>gunicorn</code>، يدور الأول داخل <code>/opt/venv/bin</code>.</p>
+<p>بعد السطر ده، داخل container:</p>
+<pre><code class="language-text">which python
+</code></pre>
+<p>المفروض يطلع:</p>
+<pre><code class="language-text">/opt/venv/bin/python
+</code></pre>
+<p>و:</p>
+<pre><code class="language-text">which gunicorn
+</code></pre>
+<p>يطلع:</p>
+<pre><code class="language-text">/opt/venv/bin/gunicorn
+</code></pre>
+<hr>
+<h1><strong>10. اختبارات مهمة داخل backend container</strong></h1>
+
+<p>بعد تشغيل المشروع:</p>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<p>نفذ:</p>
+<pre><code class="language-bash">python --version  
+which python  
+pip --version  
+which pip  
+which gunicorn  
+gunicorn --version
+</code></pre>
+<p>المفروض تشوف إنهم من:</p>
+<pre><code class="language-text">/opt/venv
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثاني: تشغيل المشروع وفهم المعمارية (Full Stack Architecture)</h1>
+</div>
+<h1><strong>Part 2 — تشغيل المشروع كاملًا وفهم Frontend/Backend</strong></h1>
+
+<h2><strong>11. عندك خدمتين رئيسيتين</strong></h2>
+<p>من:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>ظهر:</p>
+<pre><code class="language-text">backend	0.0.0.0:5010-&gt;5000/tcp  
+frontend   0.0.0.0:5173-&gt;5173/tcp
+</code></pre>
+<p>يعني:</p>
+<pre><code class="language-text">Backend  = localhost:5010  
+Frontend = localhost:5173  
+</code></pre>
+<hr>
+<h1><strong>12. Backend هو إيه؟</strong></h1>
+
+<p>الـ backend عندك Python Flask app شغال بـ Gunicorn.</p>
+<p>في logs ظهر:</p>
+<pre><code class="language-text">Starting gunicorn 23.0.0  
+Listening at: http://0.0.0.0:5000  
+Booting worker with pid: 7
+</code></pre>
+<p>ده معناه:</p>
+<ul>
+<li>Gunicorn اشتغل.  </li>
+<li>التطبيق بيسمع داخل container على port <code>5000</code>.  </li>
+<li>Docker عامل mapping من جهازك:</li>
+</ul>
+<pre><code class="language-text">localhost:5010 -&gt; container:5000
+</code></pre>
+<hr>
+<h1><strong>13. Frontend هو إيه؟</strong></h1>
+
+<p>الـ frontend container شغال غالبًا بـ Nginx أو Vite setup حسب compose.</p>
+<p>في logs ظهر:</p>
+<pre><code class="language-text">nginx/1.27.5  
+Configuration complete; ready for start up
+</code></pre>
+<p>ومن <code>docker compose ps</code>:</p>
+<pre><code class="language-text">0.0.0.0:5173-&gt;5173/tcp
+</code></pre>
+<p>إذًا تدخل على:</p>
+<pre><code class="language-text">http://localhost:5173/session-authoring-tool/
+</code></pre>
+<hr>
+<h1><strong>14. لماذا <code>localhost:5010/session-authoring-tool/</code> قال Frontend bundle not found؟</strong></h1>
+
+<p>لأن <code>5010</code> هو backend.</p>
+<p>أنت فتحت backend route، والbackend قال:</p>
+<pre><code class="language-text">Frontend bundle not found
+</code></pre>
+<p>معناها:</p>
+<p>أنا backend، ومتوقع ألاقي ملفات frontend مبنية في <code>frontend/dist/</code>، لكنها مش عندي.</p>
+<p>لكن عندك frontend container منفصل، فالرابط الصح كان:</p>
+<pre><code class="language-text">http://localhost:5173/session-authoring-tool/
+</code></pre>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>عندك بابين:</p>
+<pre><code class="language-text">5010 = API / Backend  
+5173 = UI / Frontend
+</code></pre>
+<p>لو دخلت من باب API وطلبت الصفحة، السيرفر يقولك:</p>
+<p>أنا مش صفحة، أنا backend.</p>
+<hr>
+<h1><strong>15. أهم أمر لمعرفة الرابط الصح</strong></h1>
+
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>دايمًا اقرأ <code>PORTS</code>.</p>
+<p>مثال:</p>
+<pre><code class="language-text">0.0.0.0:5010-&gt;5000/tcp
+</code></pre>
+<p>يعني افتح من المتصفح:</p>
+<pre><code class="language-text">localhost:5010
+</code></pre>
+<p>والتطبيق داخل container على:</p>
+<pre><code class="language-text">5000
+</code></pre>
+<hr>
+<h1><strong>16. أوامر تشغيل يومية</strong></h1>
+
+<h2><strong>تشغيل المشروع</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<hr>
+<h2><strong>تشغيل في الخلفية</strong></h2>
+<pre><code class="language-bash">docker compose up -d
+</code></pre>
+<hr>
+<h2><strong>معرفة الحالة</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<hr>
+<h2><strong>عرض logs</strong></h2>
+<pre><code class="language-bash">docker compose logs
+</code></pre>
+<hr>
+<h2><strong>متابعة logs live</strong></h2>
+<pre><code class="language-bash">docker compose logs -f
+</code></pre>
+<hr>
+<h2><strong>Logs للـ backend فقط</strong></h2>
+<pre><code class="language-bash">docker compose logs -f backend
+</code></pre>
+<hr>
+<h2><strong>Logs للـ frontend فقط</strong></h2>
+<pre><code class="language-bash">docker compose logs -f frontend
+</code></pre>
+<hr>
+<h2><strong>إيقاف المشروع</strong></h2>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثالث: تقنيات التحسين والتشخيص (Optimization & Debugging)</h1>
+</div>
+<h1><strong>Part 3 — Optimization و Senior Tricks</strong></h1>
+
+<h2><strong>23. المشكلة الأكبر عندك كانت البطء</strong></h2>
+<p>شفنا:</p>
+<pre><code class="language-text">Fetched 9942 kB in 13min 19s
+</code></pre>
+<p>و pip كان بينزل ببطء.</p>
+<p>فأهم هدف بعد التشغيل:</p>
+<p>إزاي مانعيدش التحميل ده كل مرة؟</p>
+<hr>
+<h1><strong>17. متى تستخدم build؟</strong></h1>
+
+<p>لو غيرت Dockerfile:</p>
+<pre><code class="language-bash">docker compose build backend  
+docker compose up
+</code></pre>
+<p>لو غيرت requirements.txt:</p>
+<pre><code class="language-bash">docker compose build backend  
+docker compose up
+</code></pre>
+<p>لو غيرت frontend package.json:</p>
+<pre><code class="language-bash">docker compose build frontend  
+docker compose up
+</code></pre>
+<p>لو غيرت كود فقط، حسب هل عندك volumes/watch ولا لأ. لو مفيش volumes، اعمل build للخدمة المعنية.</p>
+<hr>
+<h1><strong>18. تجنب <code>--no-cache</code></strong></h1>
+
+<p>ده مهم جدًا في حالتك.</p>
+<p>لا تستخدم:</p>
+<pre><code class="language-bash">docker compose build --no-cache
+</code></pre>
+<p>إلا لو مضطر.</p>
+<p>لأن ده هيعيد:</p>
+<ul>
+<li><code>apt-get update</code>  </li>
+<li><code>apt-get install</code>  </li>
+<li><code>pip install</code>  </li>
+<li><code>npm ci</code></li>
+</ul>
+<p>وانت عندك الإنترنت كان بطيء جدًا.</p>
+<p>استخدم بدلًا منه:</p>
+<pre><code class="language-bash">docker compose build backend
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-bash">docker compose build frontend
+</code></pre>
+<hr>
+<h1><strong>19. Healthcheck</strong></h1>
+
+<p>ظهر عندك:</p>
+<pre><code class="language-text">Container session-authoring-tool-backend-1 Healthy
+</code></pre>
+<p>ده معناه إن <code>docker-compose.yml</code> فيه غالبًا healthcheck للـ backend.</p>
+<p>الـ healthcheck وظيفته يتأكد إن الخدمة شغالة فعلًا، مش مجرد container قام.</p>
+<p>مثلاً ممكن يكون بيفحص endpoint زي:</p>
+<pre><code class="language-text">/health
+</code></pre>
+<p>أو يعمل curl داخلي.</p>
+<hr>
+<h1><strong>20. Debug لو backend وقع</strong></h1>
+
+<p>شوف logs:</p>
+<pre><code class="language-bash">docker compose logs backend --tail=100
+</code></pre>
+<p>أو live:</p>
+<pre><code class="language-bash">docker compose logs -f backend
+</code></pre>
+<p>ادخل container:</p>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<p>اختبر:</p>
+<pre><code class="language-bash">python --version  
+which gunicorn  
+python -c &quot;from app import app; print(app)&quot;  
+</code></pre>
+<hr>
+<h1><strong>21. Debug لو frontend وقع</strong></h1>
+
+<p>شوف logs:</p>
+<pre><code class="language-bash">docker compose logs frontend --tail=100
+</code></pre>
+<p>اختبر الرابط:</p>
+<pre><code class="language-text">curl -I http://localhost:5173/
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-text">curl -I http://localhost:5173/session-authoring-tool/
+</code></pre>
+<hr>
+<h1><strong>22. Debug لو frontend شغال لكن API مش شغال</strong></h1>
+
+<p>اختبر backend:</p>
+<pre><code class="language-text">curl -I http://localhost:5010
+</code></pre>
+<p>أو لو عندك health endpoint:</p>
+<pre><code class="language-text">curl http://localhost:5010/health
+</code></pre>
+<p>لو frontend بيحاول يكلم API باسم غلط، راجع env vars في frontend أو nginx template.</p>
+<hr>
+<h1><strong>24. استخدم Docker cache صح</strong></h1>
+
+<p>أهم قاعدة:</p>
+<p>حط الملفات الأقل تغييرًا فوق<br>وحط الملفات الأكثر تغييرًا تحت</p>
+<p>مثلاً:</p>
+<pre><code class="language-text">COPY requirements.txt .  
+RUN pip install -r requirements.txt  
+COPY . .
+</code></pre>
+<p>ده ممتاز.</p>
+<p>لأن الكود بيتغير كتير، لكن requirements أقل تغييرًا.</p>
+<hr>
+<h1><strong>25. اعمل Base Image محلية</strong></h1>
+
+<p>عشان <code>apt-get install</code> كان بطيء، اعمل image فيها system dependencies مرة واحدة.</p>
+<h2><strong><code>backend/Dockerfile.base</code></strong></h2>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN set -eux; \  
+	printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries; \  
+	find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;s|http://deb.debian.org|https://deb.debian.org|g&#39; {} +; \  
+	apt-get update; \  
+	apt-get install -y --no-install-recommends \  
+   	python3.13-venv \  
+   	curl \  
+   	poppler-utils; \  
+	rm -rf /var/lib/apt/lists/\*
+</code></pre>
+<p>ابنيها:</p>
+<pre><code class="language-bash">docker build -f backend/Dockerfile.base -t sat-texlive-python-base:local backend
+</code></pre>
+<p>ثم Dockerfile الأساسي يبدأ بـ:</p>
+<pre><code class="language-dockerfile">FROM sat-texlive-python-base:local
+</code></pre>
+<p>ويشيل خطوة apt الطويلة.</p>
+<hr>
+<h1><strong>26. Dockerfile بعد استخدام base image</strong></h1>
+
+<pre><code class="language-dockerfile">FROM sat-texlive-python-base:local
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+
+EXPOSE 5000
+
+ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>ده هيخلي build أسرع لأن apt step اتعملت مرة واحدة.</p>
+<hr>
+<h1><strong>27. <code>.dockerignore</code> مهم جدًا</strong></h1>
+
+<p>اعمل أو راجع ملف:</p>
+<pre><code class="language-text">backend/.dockerignore
+</code></pre>
+<p>وخليه مثلًا:</p>
+<pre><code class="language-text">**pycache**/  
+*.pyc*  
+.pyo  
+*.pyd*
+
+*.pytest_cache/*  
+*.coverage*  
+*htmlcov/*
+
+*.venv/*  
+*venv/*  
+*env/*
+
+*.env*  
+*.env.*
+
+.git/  
+.gitignore
+
+.DS_Store
+
+node_modules/  
+dist/  
+build/
+
+\*.log
+</code></pre>
+<p>لو فيه ملفات كبيرة مش محتاجها في image، ضيفها.</p>
+<hr>
+<h2><strong>ليه <code>.dockerignore</code> مهم؟</strong></h2>
+<p>لأن Docker بيبعت build context للـ daemon.</p>
+<p>لو context كبير، build يبقى أبطأ.</p>
+<hr>
+<h1><strong>28. تثبيت versions في requirements</strong></h1>
+
+<p>وجود versions pinned زي:</p>
+<pre><code class="language-text">flask==3.1.3  
+gunicorn==23.0.0  
+pandas==3.0.3
+</code></pre>
+<p>مفيد لأنه يخلي build قابل للتكرار.</p>
+<p>لكن خلي بالك:</p>
+<ul>
+<li>versions الحديثة جدًا ممكن لا تكون مدعومة على كل Python versions.  </li>
+<li>Python 3.13 يحتاج wheels متوافقة.  </li>
+<li>على ARM64 لازم packages يكون لها wheels مناسبة.</li>
+</ul>
+<hr>
+<h1><strong>29. Python 3.13 مميزات ومخاطر</strong></h1>
+
+<p>أنت استخدمت:</p>
+<pre><code class="language-text">Python 3.13
+</code></pre>
+<p>وده اشتغل عندك.</p>
+<p>لكن في مشاريع production أحيانًا Python 3.11 أو 3.12 يكون أكثر استقرارًا من ناحية packages.</p>
+<p>لو package معينة فشلت مستقبلًا مع 3.13، ممكن تفكر تستخدم base image بـ Python 3.11/3.12 أو تضبط requirements.</p>
+<hr>
+<h1><strong>30. لا تعتمد على <code>latest</code> في production</strong></h1>
+
+<p>عندك:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+</code></pre>
+<p>ده كويس للتطوير، لكنه ممكن يتغير.</p>
+<p>الأفضل في production تثبت tag أو digest.</p>
+<p>مثلاً logs عندك كانت فيها digest:</p>
+<pre><code class="language-text">sha256:2f9918a156cfc6c7527590e06f69bfb4fbc827278e4736c90e567382855d7cd1
+</code></pre>
+<p>فممكن تستخدم:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest@sha256:2f9918a156cfc6c7527590e06f69bfb4fbc827278e4736c90e567382855d7cd1
+</code></pre>
+<p>ده يخلي الصورة ثابتة جدًا.</p>
+<hr>
+<h1><strong>31. Gunicorn workers</strong></h1>
+
+<p>حاليًا:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>ده غالبًا worker واحد.</p>
+<p>ممكن تضيف workers:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--workers&quot;, &quot;2&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>لكن لا تزود عشوائيًا.</p>
+<p>قاعدة تقريبية:</p>
+<pre><code class="language-text">workers = 2 \* CPU cores + 1
+</code></pre>
+<p>لكن داخل Docker Desktop وبيئة development، 1 أو 2 كفاية.</p>
+<hr>
+<h1><strong>32. ENTRYPOINT vs CMD</strong></h1>
+
+<p>حاليًا:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>ده مقبول.</p>
+<p>نسخة أكثر مرونة:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;]  
+CMD [&quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>الميزة إنك تقدر تغير arguments بسهولة من compose.</p>
+<p>لكن للمشروع الحالي، خليك على البسيط.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الرابع: دليلك اليومي الشامل (Daily Workflow & Cheatsheets)</h1>
+</div>
+<h1><strong>33. تشغيل في الخلفية</strong></h1>
+
+<p>بدل ما التيرمينال يفضل ماسك logs:</p>
+<pre><code class="language-bash">docker compose up -d
+</code></pre>
+<p>ثم تابع logs:</p>
+<pre><code class="language-bash">docker compose logs -f
+</code></pre>
+<p>لإيقاف:</p>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<hr>
+<h1><strong>34. أوامر تنظيف بحذر</strong></h1>
+
+<h2><strong>حذف containers stopped</strong></h2>
+<pre><code class="language-bash">docker container prune
+</code></pre>
+<h2><strong>حذف networks غير مستخدمة</strong></h2>
+<pre><code class="language-bash">docker network prune
+</code></pre>
+<h2><strong>حذف build cache</strong></h2>
+<pre><code class="language-bash">docker builder prune
+</code></pre>
+<h2><strong>حذف أشياء كثيرة غير مستخدمة</strong></h2>
+<pre><code class="language-bash">docker system prune
+</code></pre>
+<p>خلي بالك: ده ممكن يمسح images/cache غير مستخدمة ويخلي builds الجاية أبطأ.</p>
+<hr>
+<h1><strong>35. لا تستخدم <code>docker system prune</code> إلا لما تكون فاهم</strong></h1>
+
+<p>لأنك لو مسحت cache، هتعيد تحميل:</p>
+<ul>
+<li>Debian packages  </li>
+<li>Python packages  </li>
+<li>Node packages</li>
+</ul>
+<p>وده عندك مكلف زمنيًا.</p>
+<hr>
+<h1><strong>36. Checklist تشغيل المشروع</strong></h1>
+
+<p>كل مرة تشغل:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>ثم:</p>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<p>تأكد من:</p>
+<pre><code class="language-text">backend healthy  
+frontend up  
+</code></pre>
+<p>ports واضحة</p>
+<p>افتح:</p>
+<pre><code class="language-text">http://localhost:5173/session-authoring-tool/
+</code></pre>
+<hr>
+<h1><strong>37. Checklist لو فيه مشكلة</strong></h1>
+
+<h2><strong>الصفحة مش بتفتح</strong></h2>
+<pre><code class="language-bash">docker compose ps  
+docker compose logs frontend --tail=100  
+</code></pre>
+<hr>
+<h2><strong>API مش شغال</strong></h2>
+<pre><code class="language-bash">docker compose logs backend --tail=100  
+curl -I http://localhost:5010  
+</code></pre>
+<hr>
+<h2><strong>Build بطيء</strong></h2>
+<p>اسأل:</p>
+<ul>
+<li>هل استخدمت <code>--no-cache</code>؟  </li>
+<li>هل <code>requirements.txt</code> اتغير؟  </li>
+<li>هل Dockerfile اتغير؟  </li>
+<li>هل cache اتمسح؟  </li>
+<li>هل الإنترنت بطيء؟</li>
+</ul>
+<hr>
+<h2><strong>DNS رجعت تبوز</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox cat /etc/resolv.conf  
+docker run --rm busybox nslookup deb.debian.org  
+scutil --dns | grep nameserver
+</code></pre>
+<p>لو DNS الشبكة تغير، عدل Docker Engine DNS.</p>
+<hr>
+<h1><strong>38. أفضل نسخة Dockerfile حاليًا</strong></h1>
+
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+RUN set -eux; \  
+	printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries; \  
+	find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;s|http://deb.debian.org|https://deb.debian.org|g&#39; {} +; \  
+	apt-get update; \  
+	apt-get install -y --no-install-recommends \  
+   	python3.13-venv \  
+   	curl \  
+   	poppler-utils; \  
+	rm -rf /var/lib/apt/lists/\*
+
+COPY requirements.txt .
+
+RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+
+EXPOSE 5000
+
+ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]  
+</code></pre>
+<hr>
+<h1><strong>39. Cheatsheet نهائي</strong></h1>
+
+<h2><strong>تشغيل</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<h2><strong>تشغيل في الخلفية</strong></h2>
+<pre><code class="language-bash">docker compose up -d
+</code></pre>
+<h2><strong>إيقاف</strong></h2>
+<pre><code class="language-bash">docker compose down
+</code></pre>
+<h2><strong>الحالة</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<h2><strong>logs</strong></h2>
+<pre><code class="language-bash">docker compose logs -f
+</code></pre>
+<h2><strong>backend logs</strong></h2>
+<pre><code class="language-bash">docker compose logs -f backend
+</code></pre>
+<h2><strong>frontend logs</strong></h2>
+<pre><code class="language-bash">docker compose logs -f frontend
+</code></pre>
+<h2><strong>build backend</strong></h2>
+<pre><code class="language-bash">docker compose build backend
+</code></pre>
+<h2><strong>build frontend</strong></h2>
+<pre><code class="language-bash">docker compose build frontend
+</code></pre>
+<h2><strong>build مع logs واضحة</strong></h2>
+<pre><code class="language-bash">docker compose --progress=plain build backend
+</code></pre>
+<h2><strong>تجنب إلا للضرورة</strong></h2>
+<pre><code class="language-bash">docker compose build --no-cache
+</code></pre>
+<h2><strong>دخول backend</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<h2><strong>اختبار Python</strong></h2>
+<pre><code class="language-bash">python --version  
+which python
+</code></pre>
+<h2><strong>اختبار Gunicorn</strong></h2>
+<pre><code class="language-text">which gunicorn  
+gunicorn --version
+</code></pre>
+<h2><strong>اختبار PDF tools</strong></h2>
+<pre><code class="language-text">pdfinfo -v  
+pdftotext -v
+</code></pre>
+<h2><strong>اختبار DNS</strong></h2>
+<pre><code class="language-bash">docker run --rm busybox nslookup deb.debian.org
+</code></pre>
+<h2><strong>اختبار apt</strong></h2>
+<pre><code class="language-bash">docker run --rm debian:stable-slim bash -lc &quot;apt-get update&quot;
+</code></pre>
+<hr>
+<h1><strong>40. ملخص الرحلة كلها</strong></h1>
+
+<p>إحنا بدأنا بمشكلة:</p>
+<pre><code class="language-text">Temporary failure resolving &#39;deb.debian.org&#39;
+</code></pre>
+<p>ودي كانت DNS.</p>
+<p>اكتشفنا إن Docker كان بيستخدم:</p>
+<pre><code class="language-text">8.8.8.8  
+8.8.4.4
+</code></pre>
+<p>لكن جهازك بيستخدم:</p>
+<pre><code class="language-text">172.23.100.226  
+172.23.100.225
+</code></pre>
+<p>فعدلنا Docker Engine DNS.</p>
+<p>بعد كده ظهر:</p>
+<pre><code class="language-text">Unable to connect to deb.debian.org:http
+</code></pre>
+<p>ودي كانت HTTP timeout.</p>
+<p>فعدلنا Dockerfile لاستخدام HTTPS وزودنا timeouts/retries.</p>
+<p>بعد كده ثبتنا:</p>
+<pre><code class="language-text">python3.13-venv  
+poppler-utils
+</code></pre>
+<p>وبعدين pip ثبت:</p>
+<pre><code class="language-text">flask  
+gunicorn  
+numpy  
+pandas  
+pymupdf
+</code></pre>
+<p>وفي الآخر شغلنا:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>والـ backend اشتغل على:</p>
+<pre><code class="language-text">localhost:5010
+</code></pre>
+<p>والـ frontend اشتغل على:</p>
+<pre><code class="language-text">localhost:5173
+</code></pre>
+<p>والرابط الصحيح كان:</p>
+<pre><code class="language-text">http://localhost:5173/session-authoring-tool/
+</code></pre>
+<hr>
+<h1><strong>تبسيط سينيور نهائي</strong></h1>
+
+<p>لو هتلخص كل اللي اتعلمته في قاعدة واحدة:</p>
+<p>لما Docker يقع، متعدّلش عشوائي.<br> افصل المشكلة: DNS؟ Network؟ apt؟ pip؟ ports؟ frontend/backend؟</p>
+<p>والترتيب الصح للتشخيص:</p>
+<pre><code class="language-bash">1\. docker compose ps  
+2\. logs  
+3\. DNS test  
+4\. apt test  
+5\. Dockerfile layer  
+6\. pip install  
+7\. ports  
+8\. browser URL
+</code></pre>
+<p>أنت كده عديت رحلة debugging حقيقية جدًا، وفيها شغل قريب من اللي بيحصل في production فعلًا.</p>
+
+    
+        <div class="nav-links">
+            <a href="handbook3.html" class="btn">السابق</a>
+            <span>الجزء 4 من 4</span>
+            <div></div>
+            <a href="index.html" class="btn btn-secondary">العودة للفهرس</a>
+        </div>
+    
+  </div>
+  <!-- Prism.js Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+</body>
+</html>

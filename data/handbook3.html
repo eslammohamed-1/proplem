@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Handbook 3 — Backend Dockerfile Deep Dive</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-code: #0b0f19;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-headings: #ffffff;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --font-family-sans: 'Cairo', sans-serif;
+      --font-family-mono: 'JetBrains Mono', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-family-sans);
+      line-height: 1.8;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 40px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    h1, h2, h3, h4, h5, h6 { color: var(--text-headings); margin-top: 2rem; margin-bottom: 1rem; font-weight: 800; }
+    h1 { font-size: 2.2rem; color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+    h2 { font-size: 1.8rem; }
+    h3 { font-size: 1.4rem; color: var(--success); }
+    p { margin-bottom: 1.2rem; font-size: 1.1rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul, ol { margin-bottom: 1.5rem; padding-right: 2rem; }
+    li { margin-bottom: 0.5rem; font-size: 1.1rem; }
+
+    /* Professional Code Formatting */
+    pre {
+      background: var(--bg-code) !important;
+      border: 1px solid var(--border-color) !important;
+      border-left: 4px solid var(--success) !important;
+      border-radius: 12px !important;
+      padding: 20px !important;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      direction: ltr !important;
+      text-align: left !important;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    pre code {
+      font-family: var(--font-family-mono) !important;
+      font-size: 1rem !important;
+      color: var(--text-primary) !important;
+      display: block;
+      line-height: 1.6;
+    }
+    p code, li code {
+      background: rgba(255, 255, 255, 0.1);
+      font-family: var(--font-family-mono);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--warning);
+      font-size: 0.95rem;
+      direction: ltr;
+      display: inline-block;
+    }
+    hr { border: none; border-top: 1px solid var(--border-color); margin: 2.5rem 0; }
+    blockquote {
+      background: rgba(56, 189, 248, 0.05);
+      border-right: 4px solid var(--primary);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 10px 10px 0;
+      font-size: 1.15rem;
+    }
+    .nav-links {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);
+      flex-wrap: wrap; gap: 15px;
+    }
+    .btn { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: bold; transition: all 0.3s; text-align: center; }
+    .btn.btn-secondary { background: transparent; border: 1px solid var(--border-color); }
+    .btn:hover { background: var(--primary-hover); text-decoration: none; transform: translateY(-2px); }
+    img { max-width: 100%; border-radius: 10px; }
+  
+</head>
+<body>
+  <div class="container">
+    <h1><strong>Handbook 3 — Backend Dockerfile Deep Dive</strong></h1>
+<h2><strong>شرح Dockerfile بتاع الـ Backend سطر بسطر + التريكات + أفضل الممارسات</strong></h2>
+<p>يا إسلام، ده <strong>الهاند بوك التالت كامل</strong>.<br> هنا هنفهم Dockerfile بتاع الـ backend بتاعك بعمق، مش مجرد نعدله ونمشي.</p>
+<p>الـ Dockerfile اللي كان عندك:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+RUN apt-get update \  
+	&amp;&amp; apt-get install -y --no-install-recommends \  
+   	python3.13 \  
+   	python3.13-venv \  
+   	curl \  
+   	poppler-utils \  
+	&amp;&amp; rm -rf /var/lib/apt/lists/\*
+
+COPY requirements.txt .
+
+RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+
+EXPOSE 5000
+
+ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]  
+
+</code></pre>
+<p>والنسخة اللي عدلناها بقت تقريبًا:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+RUN set -eux; \  
+	printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries; \  
+	find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;s|http://deb.debian.org|https://deb.debian.org|g&#39; {} +; \  
+	apt-get update; \  
+	apt-get install -y --no-install-recommends \  
+   	python3.13-venv \  
+   	curl \  
+   	poppler-utils; \  
+	rm -rf /var/lib/apt/lists/\*
+
+COPY requirements.txt .
+
+RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+
+EXPOSE 5000
+
+ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]  
+</code></pre>
+<hr>
+  <!-- Prism.js for syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head><div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الأول: فهم الغرض والأساسيات</h1>
+</div>
+<h1><strong>1. هدف Dockerfile أصلًا</strong></h1>
+
+<p>الـ Dockerfile هو <strong>وصفة بناء Image</strong>.</p>
+<p>يعني بدل ما تقول يدويًا:</p>
+<pre><code class="language-text">apt-get update  
+apt-get install ...  
+python -m venv ...  
+pip install ...  
+gunicorn ...
+</code></pre>
+<p>بتكتب كل ده في ملف واحد اسمه:</p>
+<pre><code class="language-text">Dockerfile
+</code></pre>
+<p>وبعدين Docker يبني منه image.</p>
+<h2><strong>الفكرة العامة</strong></h2>
+<pre><code class="language-text">Dockerfile  
+   |  
+   | docker build  
+   v  
+Image  
+   |  
+   | docker compose up  
+   v  
+Container  
+</code></pre>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>Dockerfile عامل زي recipe.</p>
+<p>لو بتعمل أكلة:</p>
+<ul>
+<li>هات دقيق.  </li>
+<li>هات مياه.  </li>
+<li>سخن الفرن.  </li>
+<li>حط المكونات.  </li>
+<li>استنى.  </li>
+<li>قدم الأكل.</li>
+</ul>
+<p>في Docker:</p>
+<ul>
+<li>هات base image.  </li>
+<li>ثبت packages.  </li>
+<li>انسخ الكود.  </li>
+<li>ثبت dependencies.  </li>
+<li>حدد أمر التشغيل.</li>
+</ul>
+<hr>
+<h1><strong>15. لماذا backend اشتغل؟</strong></h1>
+
+<p>في logs ظهر:</p>
+<pre><code class="language-text">backend-1  | [INFO] Starting gunicorn 23.0.0  
+backend-1  | [INFO] Listening at: http://0.0.0.0:5000  
+backend-1  | [INFO] Booting worker with pid: 7  
+Container session-authoring-tool-backend-1 Healthy
+</code></pre>
+<p>ده معناه:</p>
+<ul>
+<li><code>gunicorn</code> موجود.  </li>
+<li>PATH شغال.  </li>
+<li><code>app:app</code> اتقرأ.  </li>
+<li>Flask app اشتغل.  </li>
+<li>port 5000 شغال.  </li>
+<li>healthcheck نجح.</li>
+</ul>
+<hr>
+<h1><strong>16. Dockerfile النهائي المقترح حاليًا</strong></h1>
+
+<p>دي نسخة مناسبة جدًا لحالتك الحالية:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+RUN set -eux; \  
+	printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries; \  
+	find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;s|http://deb.debian.org|https://deb.debian.org|g&#39; {} +; \  
+	apt-get update; \  
+	apt-get install -y --no-install-recommends \  
+   	python3.13-venv \  
+   	curl \  
+   	poppler-utils; \  
+	rm -rf /var/lib/apt/lists/\*
+
+COPY requirements.txt .
+
+RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+
+EXPOSE 5000
+
+ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]  
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثاني: تشريح ملف Dockerfile (سطراً بسطر)</h1>
+</div>
+<h1><strong>2. السطر الأول: <code>FROM</code></strong></h1>
+
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+</code></pre>
+<h2><strong>يعني إيه <code>FROM</code>؟</strong></h2>
+<p>أي Dockerfile لازم يبدأ من base image.</p>
+<p>السطر ده بيقول:</p>
+<p>ابني الـ image بتاعتي فوق image جاهزة اسمها <code>texlive/texlive:latest</code>.</p>
+<hr>
+<h2><strong>يعني إيه <code>texlive/texlive</code>؟</strong></h2>
+<p>دي image جاهزة فيها TeX Live.</p>
+<p>TeX Live هو distribution ضخم لأدوات LaTeX.</p>
+<p>غالبًا مشروعك محتاجه عشان:</p>
+<ul>
+<li>يولد PDF.  </li>
+<li>يتعامل مع ملفات LaTeX.  </li>
+<li>يعمل compile لمحتوى تعليمي.  </li>
+<li>يستخدم أدوات زي <code>pdflatex</code>, <code>xelatex</code>, <code>lualatex</code>.</li>
+</ul>
+<hr>
+<h2><strong>يعني إيه <code>latest</code>؟</strong></h2>
+<pre><code class="language-text">texlive/texlive:latest
+</code></pre>
+<p><code>latest</code> tag معناها:</p>
+<p>هات أحدث نسخة متاحة من الصورة دي حسب Docker Hub.</p>
+<p>لكن خلي بالك: <code>latest</code> مش دايمًا معناها &quot;أفضل&quot; أو &quot;أكثر استقرارًا&quot;.</p>
+<hr>
+<h2><strong>مشكلة <code>latest</code></strong></h2>
+<p>لو image اتحدثت بكرة، build بتاعك ممكن يتغير بدون ما أنت تغير Dockerfile.</p>
+<p>يعني النهارده:</p>
+<pre><code class="language-text">texlive/texlive:latest = Python 3.13.12
+</code></pre>
+<p>بكرة ممكن تبقى:</p>
+<pre><code class="language-text">Python 3.14
+</code></pre>
+<p>أو Debian sources تتغير.</p>
+<p>وده ممكن يكسر build.</p>
+<hr>
+<h2><strong>التريكة الاحترافية</strong></h2>
+<p>في production، الأفضل تثبت version أو digest.</p>
+<p>مثلاً بدل:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+</code></pre>
+<p>ممكن تستخدم digest ظهر عندك في logs:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest@sha256:2f9918a156cfc6c7527590e06f69bfb4fbc827278e4736c90e567382855d7cd1
+</code></pre>
+<p>لكن ده advanced شوية.</p>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p><code>FROM</code> هو الأرض اللي بتبني عليها البيت.</p>
+<p>لو الأرض بتتغير كل يوم، البيت ممكن يطلع مختلف.</p>
+<p>عشان كده <code>latest</code> مريح في التطوير، لكنه خطر في production.</p>
+<hr>
+<h1><strong>3. السطر الثاني: <code>ENV DEBIAN_FRONTEND=noninteractive</code></strong></h1>
+
+<pre><code class="language-dockerfile">ENV DEBIAN_FRONTEND=noninteractive
+</code></pre>
+<h2><strong>يعني إيه <code>ENV</code>؟</strong></h2>
+<p><code>ENV</code> بتضيف environment variable داخل image/container.</p>
+<p>يعني بتقول للنظام:</p>
+<pre><code class="language-text">DEBIAN_FRONTEND=noninteractive
+</code></pre>
+<hr>
+<h2><strong>يعني إيه <code>DEBIAN_FRONTEND</code>؟</strong></h2>
+<p>ده متغير خاص بأنظمة Debian/Ubuntu.</p>
+<p>أثناء تثبيت packages بـ <code>apt-get install</code>، بعض البرامج ممكن تسأل أسئلة.</p>
+<p>مثلاً:</p>
+<pre><code class="language-text">Choose timezone  
+Restart services?  
+Configure package?
+</code></pre>
+<p>لكن أثناء Docker build مفيش إنسان يجاوب.</p>
+<p>فبنكتب:</p>
+<pre><code class="language-dockerfile">ENV DEBIAN_FRONTEND=noninteractive
+</code></pre>
+<p>عشان نقول:</p>
+<p>يا Debian، متسألنيش أسئلة. استخدم defaults.</p>
+<hr>
+<h2><strong>ليه مهم؟</strong></h2>
+<p>لو مفيش السطر ده، build ممكن يعلق.</p>
+<p>يعني تلاقي Docker واقف ومستني input مش ظاهر بوضوح.</p>
+<hr>
+<h2><strong>تريكة مهمة</strong></h2>
+<p>ممكن بدل ما تخليه global، تستخدمه داخل RUN فقط:</p>
+<pre><code class="language-dockerfile">RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ...
+</code></pre>
+<p>لكن استخدامه كـ <code>ENV</code> شائع وبسيط.</p>
+<hr>
+<h1><strong>4. السطر الثالث: <code>WORKDIR</code></strong></h1>
+
+<pre><code class="language-dockerfile">WORKDIR /app
+</code></pre>
+<h2><strong>يعني إيه <code>WORKDIR</code>؟</strong></h2>
+<p>ده بيحدد فولدر العمل داخل الـ image.</p>
+<p>أي أمر بعده هيشتغل من داخل:</p>
+<pre><code class="language-text">/app
+</code></pre>
+<p>لو <code>/app</code> مش موجود، Docker هيعمله.</p>
+<hr>
+<h2><strong>مثال</strong></h2>
+<p>بعد:</p>
+<pre><code class="language-dockerfile">WORKDIR /app
+</code></pre>
+<p>السطر ده:</p>
+<pre><code class="language-text">COPY requirements.txt .
+</code></pre>
+<p>معناه:</p>
+<p>انسخ requirements.txt إلى /app/requirements.txt</p>
+<p>لأن النقطة <code>.</code> معناها <code>/app</code>.</p>
+<hr>
+<h2><strong>ليه منستخدمش <code>RUN mkdir /app &amp;&amp; cd /app</code>؟</strong></h2>
+<p>ممكن، بس غلط عمليًا.</p>
+<p>لأن <code>cd</code> داخل <code>RUN</code> بيأثر فقط على نفس الأمر، مش على الأوامر التالية.</p>
+<p>مثلاً:</p>
+<pre><code class="language-bash">RUN cd /app  
+RUN pwd
+</code></pre>
+<p>السطر التاني مش مضمون يبقى داخل <code>/app</code>.</p>
+<p>الأصح:</p>
+<pre><code class="language-dockerfile">WORKDIR /app
+</code></pre>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p><code>WORKDIR</code> يعني:</p>
+<p>من هنا ورايح، اعتبرني واقف في فولدر <code>/app</code>.</p>
+<hr>
+<h1><strong>5. أول <code>RUN</code>: تثبيت Linux packages</strong></h1>
+
+<p>النسخة القديمة:</p>
+<pre><code class="language-dockerfile">RUN apt-get update \  
+	&amp;&amp; apt-get install -y --no-install-recommends \  
+   	python3.13 \  
+   	python3.13-venv \  
+   	curl \  
+   	poppler-utils \  
+	&amp;&amp; rm -rf /var/lib/apt/lists/\*
+</code></pre>
+<p>دي أهم خطوة كانت بتقع معاك.</p>
+<p>خلينا نشرحها جزء جزء.</p>
+<hr>
+<h2><strong>5.1 يعني إيه <code>RUN</code>؟</strong></h2>
+<pre><code class="language-dockerfile">RUN ...
+</code></pre>
+<p>بتنفذ أمر أثناء بناء image.</p>
+<p>أي حاجة تحصل في <code>RUN</code> بتتحفظ في image layer.</p>
+<p>مثلاً:</p>
+<pre><code class="language-dockerfile">RUN apt-get install curl
+</code></pre>
+<p>بعدها image يبقى فيها <code>curl</code>.</p>
+<hr>
+<h2><strong>5.2 الأمر <code>apt-get update</code></strong></h2>
+<pre><code class="language-text">apt-get update
+</code></pre>
+<p>ده لا يثبت برامج.</p>
+<p>ده بيحمّل package indexes.</p>
+<p>يعني apt يعرف:</p>
+<ul>
+<li>البرامج المتاحة.  </li>
+<li>versions.  </li>
+<li>dependencies.  </li>
+<li>مصادر البرامج.</li>
+</ul>
+<hr>
+<h2><strong>ليه لازم قبل install؟</strong></h2>
+<p>لأن <code>apt-get install</code> محتاج يعرف packages متاحة منين.</p>
+<p>لو <code>apt-get update</code> فشل، ممكن بعدها تشوف:</p>
+<pre><code class="language-text">Package has no installation candidate
+</code></pre>
+<p>حتى لو package موجودة فعلًا.</p>
+<hr>
+<h2><strong>5.3 <code>&amp;&amp;</code></strong></h2>
+<pre><code class="language-text">apt-get update &amp;&amp; apt-get install ...
+</code></pre>
+<p><code>&amp;&amp;</code> معناها:</p>
+<p>نفذ الأمر اللي بعدي فقط لو اللي قبلي نجح.</p>
+<p>يعني لو:</p>
+<pre><code class="language-text">apt-get update
+</code></pre>
+<p>فشل، متكملش install.</p>
+<hr>
+<h2><strong>ليه استخدمنا backslash <code>\</code>؟</strong></h2>
+<pre><code class="language-dockerfile">RUN apt-get update \  
+	&amp;&amp; apt-get install ...
+</code></pre>
+<p>الـ backslash معناها كمل الأمر في السطر اللي بعده.</p>
+<p>بدونها، Docker هيعتبر السطر خلص.</p>
+<p>بنستخدمها عشان readability.</p>
+<hr>
+<h2><strong>5.4 <code>apt-get install -y</code></strong></h2>
+<pre><code class="language-text">apt-get install -y
+</code></pre>
+<p><code>-y</code> معناها:</p>
+<p>وافق تلقائيًا على التثبيت.</p>
+<p>بدون <code>-y</code>، apt ممكن يسأل:</p>
+<pre><code class="language-text">Do you want to continue? [Y/n]
+</code></pre>
+<p>وفي Docker build مفيش حد يرد.</p>
+<hr>
+<h2><strong>5.5 <code>--no-install-recommends</code></strong></h2>
+<pre><code class="language-text">apt-get install -y --no-install-recommends
+</code></pre>
+<p>Debian packages ليها:</p>
+<ul>
+<li>dependencies ضرورية.  </li>
+<li>recommends مش ضرورية لكنها مقترحة.</li>
+</ul>
+<p><code>--no-install-recommends</code> معناها:</p>
+<p>ثبت الضروري فقط.</p>
+<p>وده يقلل حجم image.</p>
+<hr>
+<h2><strong>مثال</strong></h2>
+<p>بدونها، ممكن تثبت packages زيادة كتير.</p>
+<p>معها، image تبقى أخف.</p>
+<hr>
+<h1><strong>6. شرح packages في Dockerfile</strong></h1>
+
+<h2><strong>6.1 <code>python3.13</code></strong></h2>
+<pre><code class="language-text">python3.13
+</code></pre>
+<p>ده Python runtime.</p>
+<p>لكن في حالتك اكتشفنا إنه موجود أصلًا داخل:</p>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+</code></pre>
+<p>لما عملنا:</p>
+<pre><code class="language-text">apt-cache policy python3.13
+</code></pre>
+<p>ظهر:</p>
+<pre><code class="language-text">Installed: 3.13.12-1
+</code></pre>
+<p>يعني تثبيته مرة تانية غير ضروري.</p>
+<hr>
+<h2><strong>6.2 <code>python3.13-venv</code></strong></h2>
+<pre><code class="language-text">python3.13-venv
+</code></pre>
+<p>دي package مهمة عشان الأمر ده يشتغل:</p>
+<pre><code class="language-text">python3.13 -m venv /opt/venv
+</code></pre>
+<p>بدونها ممكن يظهر error زي:</p>
+<pre><code class="language-text">ensurepip is not available
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-text">No module named venv
+</code></pre>
+<hr>
+<h2><strong>6.3 <code>curl</code></strong></h2>
+<pre><code class="language-text">curl
+</code></pre>
+<p>أداة تستخدم لعمل HTTP requests من command line.</p>
+<p>مثلاً:</p>
+<pre><code class="language-text">curl http://localhost:5000
+</code></pre>
+<p>أحيانًا تستخدمها في healthcheck أو debugging.</p>
+<p>في حالتك ظهر إنها كانت مثبتة بالفعل:</p>
+<pre><code class="language-text">curl is already the newest version
+</code></pre>
+<p>لكن وجودها مش مضر.</p>
+<hr>
+<h2><strong>6.4 <code>poppler-utils</code></strong></h2>
+<pre><code class="language-text">poppler-utils
+</code></pre>
+<p>دي package مهمة جدًا لو المشروع بيتعامل مع PDFs.</p>
+<p>بتوفر أدوات زي:</p>
+<pre><code class="language-text">pdftotext  
+pdfinfo  
+pdftoppm
+</code></pre>
+<p>مثلاً Python packages أو كود backend ممكن يحتاج يحول PDF لصورة أو يقرأ معلومات PDF.</p>
+<hr>
+<h1><strong>7. تنظيف apt lists</strong></h1>
+
+<pre><code class="language-text">rm -rf /var/lib/apt/lists/\*
+</code></pre>
+<h2><strong>ليه بنعمل كده؟</strong></h2>
+<p>بعد:</p>
+<pre><code class="language-text">apt-get update
+</code></pre>
+<p>apt بيحمل package indexes في:</p>
+<pre><code class="language-text">/var/lib/apt/lists/
+</code></pre>
+<p>دي ملفات مؤقتة كبيرة.</p>
+<p>بعد ما تثبت packages، مش محتاجها داخل final image.</p>
+<p>فنمشيها:</p>
+<pre><code class="language-text">rm -rf /var/lib/apt/lists/\*
+</code></pre>
+<p>عشان نقلل حجم image.</p>
+<hr>
+<h2><strong>مهم</strong></h2>
+<p>لازم التنظيف يكون في نفس <code>RUN</code> اللي فيه <code>apt-get update</code>.</p>
+<p>يعني صح:</p>
+<pre><code class="language-dockerfile">RUN apt-get update \  
+	&amp;&amp; apt-get install -y curl \  
+	&amp;&amp; rm -rf /var/lib/apt/lists/\*
+</code></pre>
+<p>غلط أو أقل فائدة:</p>
+<pre><code class="language-dockerfile">RUN apt-get update  
+RUN apt-get install -y curl  
+RUN rm -rf /var/lib/apt/lists/\*
+</code></pre>
+<p>ليه؟</p>
+<p>لأن كل <code>RUN</code> بيعمل layer، والملفات ممكن تفضل في layer قديمة.</p>
+<hr>
+<h1><strong>8. النسخة المحسنة من أول RUN</strong></h1>
+
+<p>عدّلناها إلى:</p>
+<pre><code class="language-dockerfile">RUN set -eux; \  
+	printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries; \  
+	find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;
+</code></pre>
+<p>نشرحها.</p>
+<hr>
+<h2><strong>8.1 <code>set -eux</code></strong></h2>
+<pre><code class="language-text">set -eux
+</code></pre>
+<p>دي shell options.</p>
+<h3><strong><code>-e</code></strong></h3>
+<p>لو أي أمر فشل، أوقف الـ RUN فورًا.</p>
+<h3><strong><code>-u</code></strong></h3>
+<p>لو استخدمت variable مش متعرف، اعتبره error.</p>
+<h3><strong><code>-x</code></strong></h3>
+<p>اطبع كل أمر قبل تنفيذه.</p>
+<p>وده مفيد جدًا في logs.</p>
+<hr>
+<h2><strong>ليه استخدمناه؟</strong></h2>
+<p>عشان أثناء build تشوف بوضوح إيه اللي بيتنفذ.</p>
+<p>زي اللي ظهر عندك:</p>
+<pre><code class="language-text">+ apt-get update  
++ apt-get install ...  
+</code></pre>
+<hr>
+<h2><strong>8.2 إعداد apt retries/timeouts</strong></h2>
+<pre><code class="language-text">printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries
+</code></pre>
+<p>ده كتب ملف config لـ apt.</p>
+<h2><strong>معناه</strong></h2>
+<pre><code class="language-text">Acquire::Retries &quot;5&quot;;
+</code></pre>
+<p>لو download فشل، حاول 5 مرات.</p>
+<pre><code class="language-text">Acquire::http::Timeout &quot;180&quot;;
+</code></pre>
+<p>استنى 180 ثانية للـ HTTP.</p>
+<pre><code class="language-text">Acquire::https::Timeout &quot;180&quot;;
+</code></pre>
+<p>استنى 180 ثانية للـ HTTPS.</p>
+<hr>
+<h2><strong>ليه احتجناه؟</strong></h2>
+<p>لأن الاتصال عندك كان بطيء جدًا:</p>
+<pre><code class="language-text">12.4 kB/s
+</code></pre>
+<p>فلو apt impatient، هيفشل.</p>
+<hr>
+<h2><strong>8.3 تحويل HTTP إلى HTTPS</strong></h2>
+<pre><code class="language-text">find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;s|http://deb.debian.org|https://deb.debian.org|g&#39; {} +
+</code></pre>
+<p>ده بيدور في apt source files ويغير:</p>
+<pre><code class="language-text">http://deb.debian.org
+</code></pre>
+<p>إلى:</p>
+<pre><code class="language-text">https://deb.debian.org
+</code></pre>
+<hr>
+<h2><strong>ليه عملنا كده؟</strong></h2>
+<p>لأن الخطأ كان:</p>
+<pre><code class="language-text">Unable to connect to deb.debian.org:http
+</code></pre>
+<p>يعني port 80 كان بيعمل timeout.</p>
+<p>باستخدام HTTPS نروح على port 443.</p>
+<hr>
+<h1><strong>9. <code>COPY requirements.txt .</code></strong></h1>
+
+<pre><code class="language-text">COPY requirements.txt .
+</code></pre>
+<h2><strong>يعني إيه <code>COPY</code>؟</strong></h2>
+<p>ينسخ ملف من جهازك إلى image.</p>
+<p>الصيغة:</p>
+<pre><code class="language-text">COPY source destination
+</code></pre>
+<p>هنا:</p>
+<pre><code class="language-text">source = requirements.txt  
+destination = .
+</code></pre>
+<p>والنقطة <code>.</code> تعني <code>WORKDIR</code>، يعني:</p>
+<pre><code class="language-text">/app
+</code></pre>
+<p>فالنتيجة:</p>
+<pre><code class="language-text">/app/requirements.txt
+</code></pre>
+<hr>
+<h2><strong>ليه بننسخ requirements.txt قبل COPY . . ؟</strong></h2>
+<p>دي تريكة Docker cache مهمة جدًا.</p>
+<p>لو عملت:</p>
+<pre><code class="language-text">COPY . .  
+RUN pip install -r requirements.txt
+</code></pre>
+<p>أي تغيير في أي ملف في المشروع هيكسر cache بتاع pip install.</p>
+<p>لكن الأفضل:</p>
+<pre><code class="language-text">COPY requirements.txt .  
+RUN pip install -r requirements.txt  
+COPY . .
+</code></pre>
+<p>كده لو غيرت كود Python فقط، Docker مش هيعيد pip install طالما <code>requirements.txt</code> متغيرش.</p>
+<hr>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>بنقول لـ Docker:</p>
+<p>ثبت dependencies الأول بناءً على requirements.txt.<br> لو الكود اتغير بس dependencies متغيرتش، متعيدش التثبيت.</p>
+<p>وده يوفر وقت كبير جدًا.</p>
+<hr>
+<h1><strong>10. إنشاء virtual environment</strong></h1>
+
+<pre><code class="language-dockerfile">RUN python3.13 -m venv /opt/venv \  
+	&amp;&amp; /opt/venv/bin/pip install --upgrade pip setuptools wheel \  
+	&amp;&amp; /opt/venv/bin
+</code></pre>
+<p>دي خطوة Python الأساسية.</p>
+<hr>
+<h2><strong>10.1 <code>python3.13 -m venv /opt/venv</code></strong></h2>
+<pre><code class="language-text">python3.13 -m venv /opt/venv
+</code></pre>
+<h2><strong>معناها</strong></h2>
+<p>استخدم Python 3.13 وشغل module اسمها <code>venv</code>.</p>
+<p>اعمل virtual environment في:</p>
+<pre><code class="language-text">/opt/venv
+</code></pre>
+<hr>
+<h2><strong>يعني إيه virtual environment؟</strong></h2>
+<p>بيئة Python منفصلة.</p>
+<p>بدل ما تثبت packages في Python النظام، بتثبتها داخل:</p>
+<pre><code class="language-text">/opt/venv
+</code></pre>
+<hr>
+<h2><strong>ليه نستخدم venv داخل Docker؟</strong></h2>
+<p>سؤال مهم جدًا.</p>
+<p>ناس تقول:</p>
+<p>Docker نفسه isolated، ليه أعمل venv؟</p>
+<p>الإجابة: مش دايمًا لازم، لكن مفيد لأنه:</p>
+<ul>
+<li>يفصل packages بتاعت التطبيق عن system Python.  </li>
+<li>يخلي PATH واضح.  </li>
+<li>يقلل مشاكل Debian Python packages.  </li>
+<li>يخلي <code>gunicorn</code>, <code>flask</code>, <code>pandas</code> جوه مكان واحد.</li>
+</ul>
+<hr>
+<h2><strong>10.2 <code>/opt/venv/bin/pip install --upgrade pip setuptools wheel</code></strong></h2>
+<pre><code class="language-text">/opt/venv/bin/pip install --upgrade pip setuptools wheel
+</code></pre>
+<h2><strong>ليه نستخدم path كامل؟</strong></h2>
+<p>لأننا قبل <code>ENV PATH</code>، لو كتبت:</p>
+<pre><code class="language-text">pip
+</code></pre>
+<p>ممكن تستخدم pip النظام مش pip بتاع venv.</p>
+<p>فبنكتب:</p>
+<pre><code class="language-text">/opt/venv/bin/pip
+</code></pre>
+<p>عشان نضمن.</p>
+<hr>
+<h2><strong>packages دي إيه؟</strong></h2>
+<h3><strong><code>pip</code></strong></h3>
+<p>مدير تثبيت Python packages.</p>
+<h3><strong><code>setuptools</code></strong></h3>
+<p>أداة build/install لكتير من Python packages.</p>
+<h3><strong><code>wheel</code></strong></h3>
+<p>صيغة package جاهزة للتثبيت أسرع من build from source.</p>
+<hr>
+<h2><strong>ليه نحدثهم؟</strong></h2>
+<p>عشان بعض packages تحتاج أحدث build tooling.</p>
+<p>خصوصًا packages زي:</p>
+<ul>
+<li>numpy  </li>
+<li>pandas  </li>
+<li>pymupdf</li>
+</ul>
+<hr>
+<h2><strong>10.3 <code>pip install --no-cache-dir -r requirements.txt</code></strong></h2>
+<pre><code class="language-text">/opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+</code></pre>
+<h2><strong><code>-r requirements.txt</code></strong></h2>
+<p>ثبت كل dependencies المكتوبة في الملف.</p>
+<p>مثلاً عندك:</p>
+<pre><code class="language-text">flask==3.1.3flaskpandas==3.0.3  
+pymupdf==1.27.2.3  
+gunicorn==23.0.0  
+numpy==2.4.4  
+</code></pre>
+<hr>
+<h2><strong><code>--no-cache-dir</code></strong></h2>
+<p>يقول لـ pip:</p>
+<p>متحتفظش بكاش download داخل image.</p>
+<p>ده يقلل حجم image.</p>
+<hr>
+<h2><strong>عيب <code>--no-cache-dir</code></strong></h2>
+<p>لو بتبني كتير، ممكن الكاش يساعد.</p>
+<p>لكن داخل Docker، غالبًا نعتمد على Docker layer cache مش pip cache.</p>
+<p>في حالتك، التحميل كان بطيء، فممكن نفكر في advanced caching لاحقًا، لكن كبداية <code>--no-cache-dir</code> كويس.</p>
+<hr>
+<h1><strong>11. <code>COPY . .</code></strong></h1>
+
+<pre><code class="language-text">COPY . .
+</code></pre>
+<h2><strong>معناها</strong></h2>
+<p>انسخ كل ملفات backend context إلى <code>/app</code>.</p>
+<p>لو Dockerfile موجود في backend والـ context هو backend، يبقى ينسخ محتوى backend.</p>
+<hr>
+<h2><strong>خطر <code>COPY . .</code></strong></h2>
+<p>لو مفيش <code>.dockerignore</code> كويس، ممكن تنسخ حاجات مش محتاجها:</p>
+<ul>
+<li><code>.git</code>  </li>
+<li><code>__pycache__</code>  </li>
+<li><code>.venv</code>  </li>
+<li>ملفات test ضخمة  </li>
+<li>ملفات PDF كبيرة  </li>
+<li>node_modules  </li>
+<li>dist  </li>
+<li>secrets</li>
+</ul>
+<hr>
+<h2><strong>لازم يكون عندك <code>.dockerignore</code></strong></h2>
+<p>مثال جيد:</p>
+<pre><code class="language-text">**pycache**/  
+\*.pyc  
+.pytest_cache/  
+.venv/  
+venv/  
+.env  
+.git/  
+.gitignore  
+.DS_Store  
+node_modules/  
+dist/  
+</code></pre>
+<hr>
+<h2><strong>ليه مهم؟</strong></h2>
+<p>لأن Docker بيرسل build context كله للـ Docker daemon.</p>
+<p>لو context كبير، build يبطأ.</p>
+<hr>
+<h1><strong>12. <code>ENV PATH=&quot;/opt/venv/bin:$PATH&quot;</code></strong></h1>
+
+<pre><code class="language-dockerfile">ENV PATH=&quot;/opt/venv/bin:$PATH&quot;
+</code></pre>
+<h2><strong>معناها</strong></h2>
+<p>ضيف <code>/opt/venv/bin</code> في بداية PATH.</p>
+<p>يعني لما container يشغل:</p>
+<pre><code class="language-bash">python  
+pip  
+gunicorn
+</code></pre>
+<p>يدور الأول في:</p>
+<pre><code class="language-text">/opt/venv/bin
+</code></pre>
+<hr>
+<h2><strong>ليه مهم؟</strong></h2>
+<p>لأن <code>gunicorn</code> اتثبت داخل venv من requirements.</p>
+<p>لو PATH مش متعدل، السطر ده:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, ...]
+</code></pre>
+<p>ممكن يفشل:</p>
+<pre><code class="language-text">exec: &quot;gunicorn&quot;: executable file not found
+</code></pre>
+<hr>
+<h2><strong>بعد السطر ده</strong></h2>
+<p>الأمر:</p>
+<pre><code class="language-text">which gunicorn
+</code></pre>
+<p>داخل container غالبًا يرجع:</p>
+<pre><code class="language-text">/opt/venv/bin/gunicorn
+</code></pre>
+<hr>
+<h1><strong>13. <code>EXPOSE 5000</code></strong></h1>
+
+<pre><code class="language-text">EXPOSE 5000
+</code></pre>
+<h2><strong>معناها</strong></h2>
+<p>ده metadata بيقول:</p>
+<p>التطبيق داخل container متوقع يسمع على port 5000.</p>
+<hr>
+<h2><strong>هل <code>EXPOSE</code> يفتح port على جهازك؟</strong></h2>
+<p>لا.</p>
+<p>ده مهم جدًا.</p>
+<p>السطر ده لا يجعل التطبيق متاح على <code>localhost</code>.</p>
+<p>اللي يفتح port فعليًا هو docker compose:</p>
+<pre><code class="language-text">ports:  
+  - &quot;5010:5000&quot;  
+</code></pre>
+<hr>
+<h2><strong>الفرق</strong></h2>
+<pre><code class="language-text">EXPOSE 5000
+</code></pre>
+<p>توثيق داخل image.</p>
+<pre><code class="language-text">ports:  
+  - &quot;5010:5000&quot;
+</code></pre>
+<p>فتح فعلي من host إلى container.</p>
+<hr>
+<h1><strong>14. <code>ENTRYPOINT</code></strong></h1>
+
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<h2><strong>يعني إيه <code>ENTRYPOINT</code>؟</strong></h2>
+<p>ده الأمر اللي container يشغله لما يبدأ.</p>
+<p>يعني لما تعمل:</p>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<p>الـ backend container يشغل:</p>
+<pre><code class="language-text">gunicorn --bind 0.0.0.0:5000 app:app
+</code></pre>
+<hr>
+<h2><strong>ليه مكتوب JSON array؟</strong></h2>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>دي اسمها exec form.</p>
+<p>أفضل من shell form:</p>
+<pre><code class="language-text">ENTRYPOINT gunicorn --bind 0.0.0.0:5000 app:app
+</code></pre>
+<p>لأن exec form:</p>
+<ul>
+<li>تتعامل أفضل مع signals.  </li>
+<li>مناسبة لإيقاف container.  </li>
+<li>أقل مشاكل shell parsing.</li>
+</ul>
+<hr>
+<h2><strong>شرح Gunicorn command</strong></h2>
+<pre><code class="language-text">gunicorn --bind 0.0.0.0:5000 app:app
+</code></pre>
+<h3><strong><code>gunicorn</code></strong></h3>
+<p>WSGI server لتشغيل تطبيقات Python web.</p>
+<p>بدل Flask dev server.</p>
+<hr>
+<h3><strong><code>--bind 0.0.0.0:5000</code></strong></h3>
+<p>معناها:</p>
+<p>اسمع على كل network interfaces داخل container، port 5000.</p>
+<hr>
+<h2><strong>ليه <code>0.0.0.0</code> مش <code>127.0.0.1</code>؟</strong></h2>
+<p>لو التطبيق سمع على:</p>
+<pre><code class="language-text">127.0.0.1
+</code></pre>
+<p>داخل container، غالبًا مش هيكون reachable من خارج container.</p>
+<p>لازم:</p>
+<pre><code class="language-text">0.0.0.0
+</code></pre>
+<p>عشان Docker يقدر يوجه requests له.</p>
+<hr>
+<h3><strong><code>app:app</code></strong></h3>
+<p>دي مهمة.</p>
+<p>غالبًا معناها:</p>
+<pre><code class="language-text">module_name:variable_name
+</code></pre>
+<p>يعني:</p>
+<pre><code class="language-text">app.py : app
+</code></pre>
+<p>لو عندك ملف:</p>
+<pre><code class="language-text">from flask import Flask
+
+app = Flask(**name**)
+</code></pre>
+<p>Gunicorn يشغله بـ:</p>
+<pre><code class="language-text">gunicorn app:app
+</code></pre>
+<p>الأولى اسم الملف بدون <code>.py</code>.</p>
+<p>الثانية اسم object داخل الملف.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الثالث: تحسينات متقدمة (Best Practices)</h1>
+</div>
+<h1><strong>17. تحسين إضافي: استخدم <code>CMD</code> مع <code>ENTRYPOINT</code>؟</strong></h1>
+
+<p>حاليًا عندك:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>ده تمام.</p>
+<p>لكن ممكن تقسيم احترافي:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;]  
+CMD [&quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<h2><strong>الفرق</strong></h2>
+<p><code>ENTRYPOINT</code> الأمر الأساسي.</p>
+<p><code>CMD</code> arguments الافتراضية.</p>
+<p>ده يسمح إنك تغير arguments بسهولة وقت التشغيل.</p>
+<p>لكن للمشروع الحالي، النسخة الحالية كافية.</p>
+<hr>
+<h1><strong>18. تحسين إضافي: workers في Gunicorn</strong></h1>
+
+<p>حاليًا:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>ده بيستخدم worker واحد غالبًا.</p>
+<p>ممكن تضيف workers:</p>
+<pre><code class="language-text">ENTRYPOINT [&quot;gunicorn&quot;, &quot;--workers&quot;, &quot;2&quot;, &quot;--bind&quot;, &quot;0.0.0.0:5000&quot;, &quot;app:app&quot;]
+</code></pre>
+<p>لكن خلي بالك:</p>
+<ul>
+<li>workers أكتر = memory أكتر.  </li>
+<li>في dev مش ضروري.  </li>
+<li>في production بنحسبها حسب CPU.</li>
+</ul>
+<hr>
+<h1><strong>19. تحسين مهم: ترتيب COPY للـ cache</strong></h1>
+
+<p>الترتيب الحالي كويس:</p>
+<pre><code class="language-text">COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+COPY . .
+</code></pre>
+<p>ده أفضل من:</p>
+<pre><code class="language-text">COPY . .  
+RUN pip install -r requirements.txt
+</code></pre>
+<p>لأن الترتيب الحالي يستفيد من Docker cache.</p>
+<hr>
+<h1><strong>20. تحسين مهم: <code>.dockerignore</code></strong></h1>
+
+<p>لازم جدًا تتأكد إن عندك <code>.dockerignore</code>.</p>
+<p>اقترح للـ backend:</p>
+<pre><code class="language-text">**pycache**/  
+*.pyc*  
+.pyo  
+*.pyd*
+
+*.pytest_cache/*  
+*.coverage*  
+*htmlcov/*
+
+*.venv/*  
+*venv/*  
+*env/*
+
+*.env*  
+*.env.*
+
+.git/  
+.gitignore
+
+.DS_Store
+
+node_modules/  
+dist/  
+build/
+
+\*.log
+</code></pre>
+<p>لو عندك ملفات PDF ضخمة لا تدخل في build، أضف:</p>
+<pre><code class="language-text">\*.pdf
+</code></pre>
+<p>لكن فقط لو التطبيق لا يحتاجها داخل image.</p>
+<hr>
+<h1><strong>24. نسخة Advanced: base image محلية لتوفير الوقت</strong></h1>
+
+<p>عشان apt/pip بطيئين عندك، ممكن تعمل base image مرة واحدة.</p>
+<h2><strong><code>Dockerfile.base</code></strong></h2>
+<pre><code class="language-dockerfile">FROM texlive/texlive:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN set -eux; \  
+	printf &#39;Acquire::Retries &quot;5&quot;;\\nAcquire::http::Timeout &quot;180&quot;;\\nAcquire::https::Timeout &quot;180&quot;;\\n&#39; \&gt; /etc/apt/apt.conf.d/80-retries; \  
+	find /etc/apt -type f −name&quot;∗.list&quot;−o−name&quot;∗.sources&quot;-name &quot;\*.list&quot; -o -name &quot;\*.sources&quot; -exec sed -i &#39;s|http://deb.debian.org|https://deb.debian.org|g&#39; {} +; \  
+	apt-get update; \  
+	apt-get install -y --no-install-recommends \  
+   	python3.13-venv \  
+   	curl \  
+   	poppler-utils; \  
+	rm -rf /var/lib/apt/lists/\*
+</code></pre>
+<p>ابنيها:</p>
+<pre><code class="language-bash">docker build -f backend/Dockerfile.base -t sat-texlive-python-base:local backend
+</code></pre>
+<p>وبعدين Dockerfile الأساسي يبدأ بـ:</p>
+<pre><code class="language-dockerfile">FROM sat-texlive-python-base:local
+</code></pre>
+<p>ده يخلي تثبيت apt يحصل مرة واحدة.</p>
+<hr>
+<h1><strong>25. نسخة Advanced أكثر: build wheels مسبقًا</strong></h1>
+
+<p>عندك packages كبيرة:</p>
+<pre><code class="language-text">numpy  
+pandas  
+pymupdf
+</code></pre>
+<p>ممكن تعمل wheelhouse محلي أو pip cache mount، لكن ده نخليه في Handbook 7 بتاع optimization.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الرابع: تشخيص الأخطاء والكاش (Debugging & Cache)</h1>
+</div>
+<h1><strong>21. أوامر تشخيص Dockerfile</strong></h1>
+
+<h2><strong>ابني backend فقط</strong></h2>
+<pre><code class="language-bash">docker compose --progress=plain build backend
+</code></pre>
+<h2><strong>ابنيه من غير cache عند الضرورة فقط</strong></h2>
+<pre><code class="language-bash">docker compose --progress=plain build --no-cache backend
+</code></pre>
+<h2><strong>شغل المشروع</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<h2><strong>ادخل container</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<h2><strong>اختبر Python</strong></h2>
+<pre><code class="language-bash">python --version  
+which python
+</code></pre>
+<p>متوقع:</p>
+<pre><code class="language-text">/opt/venv/bin/python
+</code></pre>
+<h2><strong>اختبر Gunicorn</strong></h2>
+<pre><code class="language-text">which gunicorn  
+gunicorn --version
+</code></pre>
+<p>متوقع:</p>
+<pre><code class="language-text">/opt/venv/bin/gunicorn
+</code></pre>
+<h2><strong>اختبر poppler</strong></h2>
+<pre><code class="language-text">pdfinfo -v  
+pdftotext -v  
+</code></pre>
+<hr>
+<h1><strong>22. فهم Docker build cache مع Dockerfile بتاعك</strong></h1>
+
+<p>Docker بيقسم Dockerfile إلى layers.</p>
+<p>تقريبًا:</p>
+<pre><code class="language-dockerfile">Layer 1: FROM texlive  
+Layer 2: WORKDIR /app  
+Layer 3: apt-get install packages  
+Layer 4: COPY requirements.txt  
+Layer 5: pip install  
+Layer 6: COPY source code  
+Layer 7: ENV/EXPOSE/ENTRYPOINT
+</code></pre>
+<p>لو غيرت ملف Python فقط، المفروض Docker يعيد:</p>
+<pre><code class="language-text">COPY . .
+</code></pre>
+<p>وما يعيدش:</p>
+<pre><code class="language-text">apt-get install  
+pip install
+</code></pre>
+<p>طالما:</p>
+<ul>
+<li>Dockerfile قبلها متغيرش.  </li>
+<li>requirements.txt متغيرش.  </li>
+<li>ما استخدمتش <code>--no-cache</code>.</li>
+</ul>
+<hr>
+<h2><strong>أهم نصيحة</strong></h2>
+<p>بعد ما build نجح، لا تستخدم:</p>
+<pre><code class="language-text">--no-cache
+</code></pre>
+<p>إلا للضرورة.</p>
+<p>لأن عندك الإنترنت بطيء جدًا، وده هيعيد:</p>
+<ul>
+<li>apt download.  </li>
+<li>pip download.</li>
+</ul>
+<hr>
+<h1><strong>23. مشاكل شائعة في Dockerfile ده</strong></h1>
+
+<h2><strong>مشكلة 1: <code>python3.13-venv</code> مش موجود</strong></h2>
+<p>لو ظهر:</p>
+<pre><code class="language-text">Package python3.13-venv has no installation candidate
+</code></pre>
+<p>اسأل الأول:</p>
+<p>هل <code>apt-get update</code> نجح؟</p>
+<p>لو لا، أصلح network/repo.</p>
+<p>لو نعم، جرب:</p>
+<pre><code class="language-text">python3-venv
+</code></pre>
+<p>واستخدم:</p>
+<pre><code class="language-text">python3 -m venv /opt/venv
+</code></pre>
+<hr>
+<h2><strong>مشكلة 2: <code>gunicorn: not found</code></strong></h2>
+<p>سببها غالبًا:</p>
+<ul>
+<li>gunicorn مش موجود في requirements.txt.  </li>
+<li>pip install فشل.  </li>
+<li>PATH مش متعدل.  </li>
+<li>venv مش متعمل.</li>
+</ul>
+<p>اختبر:</p>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash  
+which gunicorn  
+</code></pre>
+<hr>
+<h2><strong>مشكلة 3: backend يسمع على <code>127.0.0.1</code></strong></h2>
+<p>لو غيرت bind إلى:</p>
+<pre><code class="language-text">127.0.0.1:5000
+</code></pre>
+<p>ممكن التطبيق مايبقاش reachable.</p>
+<p>خليه:</p>
+<pre><code class="language-text">0.0.0.0:5000
+</code></pre>
+<hr>
+<h2><strong>مشكلة 4: <code>Frontend bundle not found</code></strong></h2>
+<p>دي مش من Dockerfile backend مباشرة.</p>
+<p>دي حصلت لما فتحت backend port:</p>
+<pre><code class="language-text">localhost:5010
+</code></pre>
+<p>بدل frontend port:</p>
+<pre><code class="language-text">localhost:5173
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">الفصل الخامس: الدليل المرجعي والممارسة</h1>
+</div>
+<h1><strong>26. Checklist لمراجعة أي Dockerfile Backend</strong></h1>
+
+<p>قبل ما تعتمد Dockerfile، اسأل:</p>
+<h2><strong>Base image</strong></h2>
+<ul>
+<li>هل image مناسبة؟  </li>
+<li>هل <code>latest</code> مقبول؟  </li>
+<li>هل محتاج pin version؟</li>
+</ul>
+<h2><strong>System packages</strong></h2>
+<ul>
+<li>هل packages ضرورية؟  </li>
+<li>هل <code>apt-get update</code> و install في نفس RUN؟  </li>
+<li>هل استخدمت <code>--no-install-recommends</code>؟  </li>
+<li>هل نظفت <code>/var/lib/apt/lists/*</code>؟</li>
+</ul>
+<h2><strong>Python</strong></h2>
+<ul>
+<li>هل Python version واضح؟  </li>
+<li>هل venv معمول؟  </li>
+<li>هل pip installs من requirements؟  </li>
+<li>هل PATH متعدل للـ venv؟</li>
+</ul>
+<h2><strong>Cache</strong></h2>
+<ul>
+<li>هل <code>requirements.txt</code> بيتنسخ قبل <code>COPY . .</code>؟  </li>
+<li>هل <code>.dockerignore</code> موجود؟</li>
+</ul>
+<h2><strong>Runtime</strong></h2>
+<ul>
+<li>هل <code>EXPOSE</code> صحيح؟  </li>
+<li>هل <code>ENTRYPOINT</code> صحيح؟  </li>
+<li>هل app بتسمع على <code>0.0.0.0</code>؟  </li>
+<li>هل <code>gunicorn</code> موجود؟</li>
+</ul>
+<hr>
+<h1><strong>27. تمارين عملية</strong></h1>
+
+<h2><strong>تمرين 1: افحص Python داخل backend</strong></h2>
+<p>بعد تشغيل المشروع:</p>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<p>ثم:</p>
+<pre><code class="language-bash">python --version  
+which python  
+pip --version  
+which pip
+</code></pre>
+<p>المفروض تلاقيهم داخل:</p>
+<pre><code class="language-text">/opt/venv
+</code></pre>
+<hr>
+<h2><strong>تمرين 2: افحص Gunicorn</strong></h2>
+<p>داخل container:</p>
+<pre><code class="language-text">which gunicorn  
+gunicorn --version  
+</code></pre>
+<hr>
+<h2><strong>تمرين 3: افحص poppler</strong></h2>
+<p>داخل container:</p>
+<pre><code class="language-text">pdfinfo -v  
+pdftotext -v  
+</code></pre>
+<hr>
+<h2><strong>تمرين 4: افحص ملفات التطبيق</strong></h2>
+<p>داخل container:</p>
+<pre><code class="language-text">pwd  
+ls -la
+</code></pre>
+<p>لازم تكون داخل:</p>
+<pre><code class="language-text">/app
+</code></pre>
+<hr>
+<h2><strong>تمرين 5: افهم <code>app:app</code></strong></h2>
+<p>داخل container:</p>
+<pre><code class="language-text">ls
+</code></pre>
+<p>دور على:</p>
+<pre><code class="language-text">app.py
+</code></pre>
+<p>ثم:</p>
+<pre><code class="language-bash">python -c &quot;from app import app; print(app)&quot;
+</code></pre>
+<p>لو اشتغل، يبقى <code>app:app</code> صحيح.</p>
+<hr>
+<h1><strong>28. Cheatsheet Dockerfile</strong></h1>
+
+<h2><strong>Build backend</strong></h2>
+<pre><code class="language-bash">docker compose --progress=plain build backend
+</code></pre>
+<h2><strong>Run</strong></h2>
+<pre><code class="language-bash">docker compose up
+</code></pre>
+<h2><strong>Enter backend</strong></h2>
+<pre><code class="language-bash">docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<h2><strong>Check Python</strong></h2>
+<pre><code class="language-bash">python --version  
+which python
+</code></pre>
+<h2><strong>Check app</strong></h2>
+<pre><code class="language-bash">python -c &quot;from app import app; print(app)&quot;
+</code></pre>
+<h2><strong>Check Gunicorn</strong></h2>
+<pre><code class="language-text">gunicorn --version  
+which gunicorn
+</code></pre>
+<h2><strong>Check ports</strong></h2>
+<pre><code class="language-bash">docker compose ps
+</code></pre>
+<hr>
+<h1><strong>29. تبسيط سينيور نهائي</strong></h1>
+
+<p>Dockerfile بتاع backend بيعمل 7 حاجات رئيسية:</p>
+<ol>
+<li>يبدأ من image فيها TeX Live.  </li>
+<li>يجهز Debian للتثبيت بدون أسئلة.  </li>
+<li>يحدد <code>/app</code> كمجلد شغل.  </li>
+<li>يثبت system packages المطلوبة.  </li>
+<li>يعمل Python virtual environment.  </li>
+<li>يثبت Python dependencies.  </li>
+<li>يشغل Flask app عن طريق Gunicorn.</li>
+</ol>
+<p>المشكلة اللي حصلت معاك كانت مش إن Dockerfile فكرته غلط، لكن:</p>
+<ul>
+<li><code>apt</code> كان بيستخدم HTTP ومش مستقر عندك.  </li>
+<li>Docker DNS كان محتاج تعديل.  </li>
+<li>الاتصال كان بطيء جدًا.  </li>
+<li><code>python3.13</code> كان موجود أصلًا، فثبتنا فقط <code>python3.13-venv</code>.</li>
+</ul>
+<hr>
+<h1><strong>30. الواجب قبل Handbook 4</strong></h1>
+
+<p>نفذ الأوامر دي واكتب نتائجها:</p>
+<pre><code class="language-bash">docker compose ps
+
+docker exec -it session-authoring-tool-backend-1 bash
+</code></pre>
+<p>ثم داخل container:</p>
+<pre><code class="language-text">pwd  
+ls -la  
+python --version  
+which python  
+pip --version  
+which pip  
+which gunicorn  
+gunicorn --version  
+pdfinfo -v  
+exit
+</code></pre>
+<p>وبعدين افتح Dockerfile واقرأه من فوق لتحت واسأل نفسك عند كل سطر:</p>
+<h2>هل السطر ده build-time ولا run-time؟<br>هل بيأثر على cache؟<br>هل محتاج network؟<br>هل بيزود حجم image؟<br>هل ضروري لتشغيل التطبيق؟</h2>
+<h2><strong>القادم</strong></h2>
+<pre><code class="language-text">**Handbook 4 — apt-get, Debian Repos, and Package Debugging**
+</code></pre>
+<p>وده هيبقى عميق جدًا في:</p>
+<ul>
+<li><code>apt-get update</code>  </li>
+<li><code>apt-get install</code>  </li>
+<li>repositories  </li>
+<li><code>sources.list</code>  </li>
+<li><code>Candidate: none</code>  </li>
+<li>الفرق بين package مش موجودة و package index فاشلة  </li>
+<li>mirrors  </li>
+<li>HTTP/HTTPS  </li>
+<li>timeouts/retries  </li>
+<li>وشرح أخطاء Debian اللي ظهرت عندك بالتفصيل.</li>
+</ul>
+<h1>Tab 4</h1>
+<p>تمام يا إسلام.<br> بدل ما نكمل Handbook 5 و 6 و 7 منفصلين، هعملك <strong>آخر Handbook جامع</strong> فيه كل اللي فاضل بشكل مرتب:</p>
+
+    
+        <div class="nav-links">
+            <a href="handbook2.html" class="btn">السابق</a>
+            <span>الجزء 3 من 4</span>
+            <a href="handbook4.html" class="btn">التالي</a>
+            <a href="index.html" class="btn btn-secondary">العودة للفهرس</a>
+        </div>
+    
+  </div>
+  <!-- Prism.js Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+</body>
+</html>

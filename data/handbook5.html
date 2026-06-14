@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Handbook 5 — AWS S3 CLI Handbook</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-code: #0b0f19;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-primary: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-headings: #ffffff;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #34d399;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --font-family-sans: 'Cairo', sans-serif;
+      --font-family-mono: 'JetBrains Mono', Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-family-sans);
+      line-height: 1.8;
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.15), transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 40px;
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    h1, h2, h3, h4, h5, h6 { color: var(--text-headings); margin-top: 2rem; margin-bottom: 1rem; font-weight: 800; }
+    h1 { font-size: 2.2rem; color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+    h2 { font-size: 1.8rem; }
+    h3 { font-size: 1.4rem; color: var(--success); }
+    p { margin-bottom: 1.2rem; font-size: 1.1rem; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul, ol { margin-bottom: 1.5rem; padding-right: 2rem; }
+    li { margin-bottom: 0.5rem; font-size: 1.1rem; }
+
+    /* Professional Code Formatting */
+    pre {
+      background: var(--bg-code) !important;
+      border: 1px solid var(--border-color) !important;
+      border-left: 4px solid var(--success) !important;
+      border-radius: 12px !important;
+      padding: 20px !important;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      direction: ltr !important;
+      text-align: left !important;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    pre code {
+      font-family: var(--font-family-mono) !important;
+      font-size: 1rem !important;
+      color: var(--text-primary) !important;
+      display: block;
+      line-height: 1.6;
+    }
+    p code, li code {
+      background: rgba(255, 255, 255, 0.1);
+      font-family: var(--font-family-mono);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--warning);
+      font-size: 0.95rem;
+      direction: ltr;
+      display: inline-block;
+    }
+    hr { border: none; border-top: 1px solid var(--border-color); margin: 2.5rem 0; }
+    blockquote {
+      background: rgba(56, 189, 248, 0.05);
+      border-right: 4px solid var(--primary);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 10px 10px 0;
+      font-size: 1.15rem;
+    }
+    .nav-links {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);
+      flex-wrap: wrap; gap: 15px;
+    }
+    .btn { background: var(--primary); color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: bold; transition: all 0.3s; text-align: center; }
+    .btn.btn-secondary { background: transparent; border: 1px solid var(--border-color); }
+    .btn:hover { background: var(--primary-hover); text-decoration: none; transform: translateY(-2px); }
+    img { max-width: 100%; border-radius: 10px; }
+  </style>
+
+  <!-- Prism.js for syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+<h1 style="color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;"><strong>AWS S3 CLI Handbook</strong></h1>
+<h2><strong>Secure Backend + S3 + CLI Reference</strong></h2>
+<blockquote>
+<p><strong>نسخة مذاكرة ومرجع عملي</strong></p>
+<p>هذا الهاند بوك معمول كمرجع عملي لفهم وإدارة ملفات AWS S3 باستخدام AWS CLI، مع ربطه بفكرة الـ Backend الآمن، والـ <code>.env</code>، والـ SDK مثل <code>boto3</code>.</p>
+</blockquote>
+<hr>
+<h2><strong>بيانات مشروع التدريب</strong></h2>
+<pre><code class="language-text">Bucket: session-authoring-tool
+Main Prefix: source_materials/
+</code></pre>
+<hr>
+<h1 style="color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;"><strong>Table of Contents</strong></h1>
+<ol>
+<li><a href="#1-%D8%A7%D9%84%D9%81%D9%83%D8%B1%D8%A9-%D8%A7%D9%84%D8%A3%D8%B3%D8%A7%D8%B3%D9%8A%D8%A9-%D9%82%D8%A8%D9%84-%D8%A7%D9%84%D8%A3%D9%88%D8%A7%D9%85%D8%B1">الفكرة الأساسية قبل الأوامر</a></li>
+<li><a href="#2-%D8%A7%D9%84%D9%81%D8%B1%D9%82-%D8%A8%D9%8A%D9%86-aws-s3-%D9%88-aws-s3api">الفرق بين aws s3 و aws s3api</a></li>
+<li><a href="#3-%D8%AA%D8%AC%D9%87%D9%8A%D8%B2-aws-cli">تجهيز AWS CLI</a></li>
+<li><a href="#4-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-%D8%A7%D9%84%D8%B9%D8%B1%D8%B6-%D9%88%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%83%D8%B4%D8%A7%D9%81">أوامر العرض والاستكشاف</a></li>
+<li><a href="#5-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-%D8%A7%D9%84%D8%B1%D9%81%D8%B9-upload">أوامر الرفع Upload</a></li>
+<li><a href="#6-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-%D8%A7%D9%84%D8%AA%D8%AD%D9%85%D9%8A%D9%84-download">أوامر التحميل Download</a></li>
+<li><a href="#7-%D8%A3%D9%85%D8%B1-sync">أمر Sync</a></li>
+<li><a href="#8-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-%D8%A7%D9%84%D8%AD%D8%B0%D9%81-delete">أوامر الحذف Delete</a></li>
+<li><a href="#9-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-%D8%A7%D9%84%D9%86%D9%82%D9%84-%D9%88%D8%A5%D8%B9%D8%A7%D8%AF%D8%A9-%D8%A7%D9%84%D8%AA%D8%B3%D9%85%D9%8A%D8%A9">أوامر النقل وإعادة التسمية</a></li>
+<li><a href="#10-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-s3api-%D8%A7%D9%84%D9%85%D9%87%D9%85%D8%A9">أوامر s3api المهمة</a></li>
+<li><a href="#11-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-presigned-url">أوامر Presigned URL</a></li>
+<li><a href="#12-%D8%A3%D9%88%D8%A7%D9%85%D8%B1-%D8%A5%D9%86%D8%B4%D8%A7%D8%A1-%D9%88%D8%AD%D8%B0%D9%81-buckets">أوامر إنشاء وحذف Buckets</a></li>
+<li><a href="#13-%D8%A3%D8%B4%D9%87%D8%B1-%D8%A7%D9%84%D9%85%D8%B4%D8%A7%D9%83%D9%84-%D9%88%D8%AD%D9%84%D9%87%D8%A7">أشهر المشاكل وحلها</a></li>
+<li><a href="#14-iam-policies-%D9%85%D9%87%D9%85%D8%A9">IAM Policies مهمة</a></li>
+<li><a href="#15-%D9%85%D9%84%D9%81-env-%D8%A7%D9%84%D9%86%D9%87%D8%A7%D8%A6%D9%8A-%D9%84%D9%84%D8%A8%D8%A7%D9%83-%D8%A7%D9%86%D8%AF">ملف env النهائي للباك اند</a></li>
+<li><a href="#16-%D8%A7%D9%84%D8%B1%D8%A8%D8%B7-%D8%A8%D9%8A%D9%86-cli-%D9%88%D8%A7%D9%84%D8%A8%D8%A7%D9%83-%D8%A7%D9%86%D8%AF">الربط بين CLI والباك اند</a></li>
+<li><a href="#17-naming-convention-%D9%85%D9%87%D9%85-%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9%D9%83">Naming Convention مهم لمشروعك</a></li>
+<li><a href="#18-command-cheat-sheet-%D9%86%D9%87%D8%A7%D8%A6%D9%8A">Command Cheat Sheet نهائي</a></li>
+<li><a href="#19-%D8%AA%D8%AF%D8%B1%D9%8A%D8%A8%D8%A7%D8%AA-%D8%B9%D9%85%D9%84%D9%8A%D8%A9">تدريبات عملية</a></li>
+<li><a href="#20-%D9%82%D9%88%D8%A7%D8%B9%D8%AF-%D8%B0%D9%87%D8%A8%D9%8A%D8%A9-%D9%85%D9%86-%D8%A7%D9%84%D8%AB%D9%84%D8%A7%D8%AB-%D8%AE%D8%A8%D8%B1%D8%A7%D8%A1">قواعد ذهبية من الثلاث خبراء</a></li>
+<li><a href="#21-%D8%A7%D9%84%D8%AE%D9%84%D8%A7%D8%B5%D8%A9-%D8%A7%D9%84%D9%86%D9%87%D8%A7%D8%A6%D9%8A%D8%A9">الخلاصة النهائية</a></li>
+<li><a href="#22-%D8%A7%D9%84%D9%85%D8%B1%D8%A7%D8%AC%D8%B9-%D8%A7%D9%84%D8%B1%D8%B3%D9%85%D9%8A%D8%A9">المراجع الرسمية</a></li>
+</ol>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">1. الفكرة الأساسية قبل الأوامر</h1>
+</div>
+<h2><strong>S3 مش File System عادي</strong></h2>
+<p>في جهازك عندك شكل مألوف زي:</p>
+<pre><code class="language-text">folder/file.zip
+</code></pre>
+<p>لكن في AWS S3، أنت لا تتعامل مع فولدرات حقيقية بنفس معنى نظام الملفات في ويندوز أو لينكس.</p>
+<p>في S3 عندك 3 مفاهيم أساسية:</p>
+<pre><code class="language-text">Bucket
+Object Key
+Prefix
+</code></pre>
+<p>مثال:</p>
+<pre><code class="language-text">s3://session-authoring-tool/source_materials/lesson1.zip
+</code></pre>
+<p>يتقسم كده:</p>
+<pre><code class="language-text">Bucket = session-authoring-tool
+Key = source_materials/lesson1.zip
+Prefix = source_materials/
+Object Name = lesson1.zip
+</code></pre>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>أي حاجة بعد اسم الـ Bucket تعتبر اسم الملف الكامل جوه S3.</p>
+<p>يعني ده:</p>
+<pre><code class="language-text">s3://session-authoring-tool/source_materials/math/lesson1.zip
+</code></pre>
+<p>مش معناه بالضرورة إن فيه فولدر حقيقي اسمه <code>source_materials</code> وفولدر حقيقي اسمه <code>math</code>.</p>
+<p>بالنسبة لـ S3 هو Object Key طويل اسمه:</p>
+<pre><code class="language-text">source_materials/math/lesson1.zip
+</code></pre>
+<p>لكن AWS Console والـ CLI بيعرضوه كأنه فولدرات عشان يسهل عليك التصفح.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">2. الفرق بين `aws s3` و `aws s3api`</h1>
+</div>
+<h2><strong>`aws s3`</strong></h2>
+<p>دي أوامر High-level، سهلة ومناسبة للشغل اليومي.</p>
+<p>أمثلة:</p>
+<pre><code class="language-bash">aws s3 ls
+aws s3 cp
+aws s3 sync
+aws s3 rm
+aws s3 mv
+</code></pre>
+<p>استخدمها لما تكون عايز:</p>
+<ul>
+<li>ترفع ملف.</li>
+<li>تحمل ملف.</li>
+<li>تعرض محتويات.</li>
+<li>تعمل مزامنة.</li>
+<li>تمسح ملفات.</li>
+<li>تنقل أو تغير اسم ملف.</li>
+</ul>
+<h2><strong>`aws s3api`</strong></h2>
+<p>دي أوامر Low-level أقرب للـ API الحقيقي بتاع S3.</p>
+<p>أمثلة:</p>
+<pre><code class="language-bash">aws s3api head-object
+aws s3api put-object
+aws s3api list-objects-v2
+</code></pre>
+<p>استخدمها لما تكون عايز:</p>
+<ul>
+<li>تتأكد إن ملف موجود بدون تحميله.</li>
+<li>تعمل Object فاضي يظهر كأنه فولدر.</li>
+<li>تشوف Metadata.</li>
+<li>تعمل Debugging أعمق.</li>
+<li>تطابق اللي بيحصل في <code>boto3</code> أو أي SDK.</li>
+</ul>
+<h2><strong>تبسيط سينيور</strong></h2>
+<ul>
+<li><code>aws s3</code> = أوامر يومية سهلة.</li>
+<li><code>aws s3api</code> = أوامر أعمق وأقرب للبرمجة والـ SDK.</li>
+</ul>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">3. تجهيز AWS CLI</h1>
+</div>
+<h2><strong>Command 1: معرفة إصدار AWS CLI</strong></h2>
+<pre><code class="language-bash">aws --version
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيأكدلك إن AWS CLI متثبت على جهازك.</p>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-text">aws-cli/2.15.30 Python/3.11.6 Linux/...
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>أول ما تبدأ على جهاز جديد أو لو مش متأكد إن AWS CLI متثبت.</p>
+<h3><strong>لو فشل؟</strong></h3>
+<p>لو ظهر:</p>
+<pre><code class="language-text">aws: command not found
+</code></pre>
+<p>يبقى AWS CLI مش متثبت أو مش مضاف في PATH.</p>
+<hr>
+<h2><strong>Command 2: ربط الجهاز بحساب AWS</strong></h2>
+<pre><code class="language-bash">aws configure
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيخزن Credentials على جهازك عشان AWS CLI يعرف يكلم AWS.</p>
+<p>هيطلب منك:</p>
+<pre><code class="language-text">AWS Access Key ID
+AWS Secret Access Key
+Default region name
+Default output format
+</code></pre>
+<p>مثال:</p>
+<pre><code class="language-text">AWS Access Key ID: AKIAxxxxxxxx
+AWS Secret Access Key: xxxxxxxxx
+Default region name: eu-west-1
+Default output format: json
+</code></pre>
+<h3><strong>بيخزن فين؟</strong></h3>
+<p>غالبًا في:</p>
+<pre><code class="language-text">~/.aws/credentials
+~/.aws/config
+</code></pre>
+<h3><strong>مهم أمنيًا</strong></h3>
+<p>متحطش المفاتيح دي في GitHub.</p>
+<p>دي أسرار زي <code>.env</code>.</p>
+<hr>
+<h2><strong>Command 3: معرفة أنت داخل بأنهي User</strong></h2>
+<pre><code class="language-bash">aws sts get-caller-identity
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيقولك AWS CLI شغال باسم مين.</p>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-json">{
+  &quot;UserId&quot;: &quot;AIDAEXAMPLE&quot;,
+  &quot;Account&quot;: &quot;123456789012&quot;,
+  &quot;Arn&quot;: &quot;arn:aws:iam::123456789012:user/session-cli-user&quot;
+}
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>قبل أي عملية مهمة، خصوصًا قبل:</p>
+<ul>
+<li>Delete.</li>
+<li>Upload على Production.</li>
+<li>Sync مع <code>--delete</code>.</li>
+</ul>
+<h3><strong>تبسيط سينيور</strong></h3>
+<p>الأمر ده زي إنك تسأل:</p>
+<blockquote>
+<p>أنا ماسك مفاتيح مين دلوقتي؟</p>
+</blockquote>
+<hr>
+<h2><strong>Command 4: عرض إعدادات AWS الحالية</strong></h2>
+<pre><code class="language-bash">aws configure list
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيعرض:</p>
+<ul>
+<li>هل Access Key موجود.</li>
+<li>هل Secret Key موجود.</li>
+<li>Region الحالي.</li>
+<li>Profile الحالي.</li>
+<li>مصدر الإعدادات.</li>
+</ul>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-text">Name                    Value             Type    Location
+----                    -----             ----    --------
+profile                 default           manual  --profile
+access_key              ****ABCD          shared-credentials-file
+secret_key              ****EFGH          shared-credentials-file
+region                  eu-west-1         config-file
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>لو ظهرلك Error زي:</p>
+<pre><code class="language-text">Unable to locate credentials
+</code></pre>
+<p>أو لو حاسس إن Region أو Profile غلط.</p>
+<hr>
+<h2><strong>Command 5: استخدام Profile مختلف</strong></h2>
+<pre><code class="language-bash">aws configure --profile session-dev
+</code></pre>
+<p>وبعدين تستخدمه كده:</p>
+<pre><code class="language-bash">aws s3 ls --profile session-dev
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيخليك تتعامل مع أكتر من حساب أو بيئة.</p>
+<p>مثال:</p>
+<pre><code class="language-text">default
+dev
+staging
+production
+</code></pre>
+<h3><strong>مثال عملي</strong></h3>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --profile session-dev
+</code></pre>
+<h3><strong>تبسيط سينيور</strong></h3>
+<p>Profile يعني شخصية مختلفة للـ CLI:</p>
+<ul>
+<li>شخصية Dev.</li>
+<li>شخصية Staging.</li>
+<li>شخصية Production.</li>
+</ul>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">4. أوامر العرض والاستكشاف</h1>
+</div>
+<h2><strong>Command 6: عرض كل الـ Buckets</strong></h2>
+<pre><code class="language-bash">aws s3 ls
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيعرض كل الـ Buckets اللي الـ User الحالي يقدر يشوفها.</p>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-text">2026-06-14 08:30:12 session-authoring-tool
+2026-06-10 11:20:00 another-bucket
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<ul>
+<li>تتأكد إن credentials صح.</li>
+<li>تعرف اسم الـ Bucket بالضبط.</li>
+<li>تتأكد إن الـ User عنده صلاحية List.</li>
+</ul>
+<h3><strong>أشهر Error</strong></h3>
+<pre><code class="language-text">AccessDenied
+</code></pre>
+<p>معناه الـ User ملوش صلاحية يشوف الـ Buckets.</p>
+<hr>
+<h2><strong>Command 7: عرض محتويات Bucket</strong></h2>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيعرض أول مستوى ظاهر داخل الـ Bucket.</p>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-text">                           PRE source_materials/
+                           PRE logs/
+</code></pre>
+<h3><strong>معنى `PRE`</strong></h3>
+<p><code>PRE</code> اختصار Prefix.</p>
+<p>يعني AWS CLI شايف إن فيه مسارات تبدأ بـ:</p>
+<pre><code class="language-text">source_materials/
+</code></pre>
+<hr>
+<h2><strong>Command 8: عرض Prefix معين</strong></h2>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيعرض الملفات أو الـ Prefixes الموجودة تحت:</p>
+<pre><code class="language-text">source_materials/
+</code></pre>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-text">2026-06-14 09:10:00   3045992 150169015780_mt.zip
+2026-06-14 09:15:00   1842000 150169015781_mt.zip
+                           PRE math_sessions/
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>قبل ما تقول للباك اند يدور على ملف.</p>
+<p>لو الباك اند بيدور على:</p>
+<pre><code class="language-text">source_materials/150169015780_mt.zip
+</code></pre>
+<p>لازم تتأكد إنه موجود هنا.</p>
+<hr>
+<h2><strong>Command 9: عرض كل الملفات Recursively</strong></h2>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --recursive
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيجيب كل الملفات جوه <code>source_materials/</code> حتى لو جواها Prefixes فرعية.</p>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-text">2026-06-14 09:10:00 3045992 source_materials/150169015780_mt.zip
+2026-06-14 09:11:00 2045000 source_materials/math_sessions/lesson1.zip
+2026-06-14 09:12:00 1099000 source_materials/physics_sessions/lesson2.zip
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>لما تكون مش متأكد الملف فين.</p>
+<hr>
+<h2><strong>Command 10: عرض الأحجام بشكل مفهوم</strong></h2>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --recursive --human-readable
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بدل ما يعرض الحجم بالـ bytes، يعرضه بشكل أوضح مثل KB/MB/GB.</p>
+<h3><strong>مثال</strong></h3>
+<pre><code class="language-text">2026-06-14 09:10:00 2.9 MiB source_materials/150169015780_mt.zip
+</code></pre>
+<hr>
+<h2><strong>Command 11: عرض ملخص عدد وحجم الملفات</strong></h2>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --recursive --summarize
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>في الآخر بيعرض ملخص:</p>
+<pre><code class="language-text">Total Objects: 120
+Total Size: 345678900
+</code></pre>
+<h3><strong>استخدام مهم</strong></h3>
+<p>تعرف حجم الداتا قبل Download أو Delete.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">5. أوامر الرفع Upload</h1>
+</div>
+<h2><strong>Command 12: رفع ملف واحد</strong></h2>
+<pre><code class="language-bash">aws s3 cp 150169015780_mt.zip s3://session-authoring-tool/source_materials/
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيرفع الملف المحلي:</p>
+<pre><code class="language-text">150169015780_mt.zip
+</code></pre>
+<p>إلى:</p>
+<pre><code class="language-text">source_materials/150169015780_mt.zip
+</code></pre>
+<h3><strong>النتيجة داخل S3</strong></h3>
+<pre><code class="language-text">Bucket: session-authoring-tool
+Key: source_materials/150169015780_mt.zip
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>لما يكون عندك ملف Session zip واحد.</p>
+<hr>
+<h2><strong>Command 13: رفع ملف مع تغيير اسمه</strong></h2>
+<pre><code class="language-bash">aws s3 cp session.zip s3://session-authoring-tool/source_materials/150169015780_mt.zip
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يرفع <code>session.zip</code> لكن يخزنه في S3 باسم:</p>
+<pre><code class="language-text">150169015780_mt.zip
+</code></pre>
+<h3><strong>مهم جدًا</strong></h3>
+<p>ده مفيد لو الباك اند متوقع Naming Convention معين.</p>
+<p>مثلاً:</p>
+<pre><code class="language-text">{id}_mt.zip
+</code></pre>
+<hr>
+<h2><strong>Command 14: رفع ملف داخل Prefix فرعي</strong></h2>
+<pre><code class="language-bash">aws s3 cp lesson1.zip s3://session-authoring-tool/source_materials/math_sessions/lesson1.zip
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيرفع الملف داخل مسار فرعي.</p>
+<h3><strong>النتيجة</strong></h3>
+<pre><code class="language-text">source_materials/math_sessions/lesson1.zip
+</code></pre>
+<h3><strong>هل لازم أعمل `math_sessions/` الأول؟</strong></h3>
+<p>لا.</p>
+<p>S3 هيعرضه كفولدر تلقائيًا لأن الـ Object Key فيه <code>/</code>.</p>
+<hr>
+<h2><strong>Command 15: رفع فولدر كامل</strong></h2>
+<pre><code class="language-bash">aws s3 cp ./all_sessions/ s3://session-authoring-tool/source_materials/ --recursive
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيرفع كل الملفات الموجودة داخل:</p>
+<pre><code class="language-text">./all_sessions/
+</code></pre>
+<p>إلى:</p>
+<pre><code class="language-text">source_materials/
+</code></pre>
+<h3><strong>ليه `--recursive` مهمة؟</strong></h3>
+<p>لأن <code>cp</code> بدون <code>--recursive</code> بيتعامل مع ملف واحد.</p>
+<p>لو المصدر عبارة عن فولدر، لازم تقول له:</p>
+<blockquote>
+<p>ادخل جوه الفولدر وارفع كل اللي فيه.</p>
+</blockquote>
+<hr>
+<h2><strong>Command 16: رفع ملفات Zip فقط</strong></h2>
+<pre><code class="language-bash">aws s3 cp . s3://session-authoring-tool/source_materials/ \
+  --recursive \
+  --exclude &quot;*&quot; \
+  --include &quot;*.zip&quot;
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يرفع فقط الملفات اللي امتدادها:</p>
+<pre><code class="language-text">.zip
+</code></pre>
+<h3><strong>شرح السطور</strong></h3>
+<pre><code class="language-bash">aws s3 cp .
+</code></pre>
+<p>المصدر هو الفولدر الحالي.</p>
+<pre><code class="language-bash">s3://session-authoring-tool/source_materials/
+</code></pre>
+<p>الوجهة هي Prefix في S3.</p>
+<pre><code class="language-bash">--recursive
+</code></pre>
+<p>ادخل جوه الفولدرات.</p>
+<pre><code class="language-bash">--exclude &quot;*&quot;
+</code></pre>
+<p>استبعد كل حاجة.</p>
+<pre><code class="language-bash">--include &quot;*.zip&quot;
+</code></pre>
+<p>ارجع اسمح بملفات zip فقط.</p>
+<h3><strong>تبسيط سينيور</strong></h3>
+<p>الترتيب هنا مهم:</p>
+<ol>
+<li>امنع الكل.</li>
+<li>اسمح بالـ zip فقط.</li>
+</ol>
+<hr>
+<h2><strong>Command 17: تجربة الرفع بدون تنفيذ</strong></h2>
+<pre><code class="language-bash">aws s3 cp . s3://session-authoring-tool/source_materials/ \
+  --recursive \
+  --exclude &quot;*&quot; \
+  --include &quot;*.zip&quot; \
+  --dryrun
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يعرضلك الملفات اللي كان هيرفعها، لكنه لا يرفع فعليًا.</p>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>قبل رفع فولدر كبير، خصوصًا لو فيه ملفات كتير ومش عايز ترفع حاجة غلط.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">6. أوامر التحميل Download</h1>
+</div>
+<h2><strong>Command 18: تحميل ملف واحد للمكان الحالي</strong></h2>
+<pre><code class="language-bash">aws s3 cp s3://session-authoring-tool/source_materials/150169015780_mt.zip .
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يحمل الملف إلى الفولدر الحالي.</p>
+<p>النقطة <code>.</code> معناها:</p>
+<pre><code class="language-text">Current Directory
+</code></pre>
+<hr>
+<h2><strong>Command 19: تحميل ملف داخل فولدر محلي</strong></h2>
+<pre><code class="language-bash">aws s3 cp s3://session-authoring-tool/source_materials/150169015780_mt.zip ./downloads/
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يحمل الملف داخل فولدر:</p>
+<pre><code class="language-text">downloads
+</code></pre>
+<h3><strong>ملاحظة</strong></h3>
+<p>لو فولدر <code>downloads</code> مش موجود، اعمله الأول:</p>
+<pre><code class="language-bash">mkdir -p downloads
+</code></pre>
+<hr>
+<h2><strong>Command 20: تحميل Prefix كامل</strong></h2>
+<pre><code class="language-bash">aws s3 cp s3://session-authoring-tool/source_materials/ ./downloads/ --recursive
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يحمل كل الملفات تحت:</p>
+<pre><code class="language-text">source_materials/
+</code></pre>
+<p>إلى:</p>
+<pre><code class="language-text">./downloads/
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">7. أمر Sync</h1>
+</div>
+<h2><strong>Command 21: مزامنة فولدر محلي مع S3</strong></h2>
+<pre><code class="language-bash">aws s3 sync ./all_sessions/ s3://session-authoring-tool/source_materials/
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>بيقارن بين الملفات المحلية والملفات على S3.</p>
+<p>ويرفع فقط:</p>
+<ul>
+<li>الملفات الجديدة.</li>
+<li>الملفات اللي اتغيرت.</li>
+</ul>
+<hr>
+<h2><strong>الفرق بين `cp --recursive` و `sync`</strong></h2>
+<h3><strong>`cp --recursive`</strong></h3>
+<p>ينسخ الملفات المطابقة مباشرة.</p>
+<h3><strong>`sync`</strong></h3>
+<p>يقارن الأول، وينقل المختلف فقط.</p>
+<hr>
+<h2><strong>Command 22: Sync مع حذف الزيادة</strong></h2>
+<pre><code class="language-bash">aws s3 sync ./all_sessions/ s3://session-authoring-tool/source_materials/ --delete
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يخلي S3 نسخة مطابقة من الفولدر المحلي.</p>
+<p>لو فيه ملف على S3 مش موجود محليًا، هيتحذف.</p>
+<h3><strong>خطر جدًا</strong></h3>
+<p>قبلها استخدم:</p>
+<pre><code class="language-bash">aws s3 sync ./all_sessions/ s3://session-authoring-tool/source_materials/ --delete --dryrun
+</code></pre>
+<hr>
+<h2><strong>Command 23: Sync ملفات Zip فقط</strong></h2>
+<pre><code class="language-bash">aws s3 sync ./all_sessions/ s3://session-authoring-tool/source_materials/ \
+  --exclude &quot;*&quot; \
+  --include &quot;*.zip&quot;
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يزامن ملفات zip فقط.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">8. أوامر الحذف Delete</h1>
+</div>
+<h2><strong>Command 24: حذف ملف واحد</strong></h2>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/wrong_file.zip
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يحذف Object واحد.</p>
+<h3><strong>تحذير</strong></h3>
+<p>مفيش Recycle Bin.</p>
+<p>لو Versioning مش مفعّل، الحذف ممكن يكون نهائي.</p>
+<hr>
+<h2><strong>Command 25: Preview حذف ملف</strong></h2>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/wrong_file.zip --dryrun
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يقولك كان هيحذف إيه بدون تنفيذ.</p>
+<hr>
+<h2><strong>Command 26: حذف Prefix كامل</strong></h2>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/math_sessions/ --recursive
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يحذف كل الملفات اللي Key بتاعها يبدأ بـ:</p>
+<pre><code class="language-text">source_materials/math_sessions/
+</code></pre>
+<h3><strong>قبل التنفيذ الحقيقي</strong></h3>
+<p>استخدم:</p>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/math_sessions/ --recursive --dryrun
+</code></pre>
+<h3><strong>تبسيط سينيور</strong></h3>
+<p>أي Delete فيه <code>--recursive</code> لازم قبله <code>--dryrun</code>.</p>
+<p>دي قاعدة أمان.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">9. أوامر النقل وإعادة التسمية</h1>
+</div>
+<h2><strong>Command 27: نقل أو Rename ملف</strong></h2>
+<pre><code class="language-bash">aws s3 mv s3://session-authoring-tool/source_materials/old.zip s3://session-authoring-tool/source_materials/new.zip
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>ينقل Object من Key إلى Key تاني.</p>
+<p>عمليًا ده Copy ثم Delete.</p>
+<h3><strong>استخدامه</strong></h3>
+<p>لو رفعت ملف باسم غلط وتريد تصحيحه.</p>
+<hr>
+<h2><strong>Command 28: نقل ملف من Prefix إلى Prefix آخر</strong></h2>
+<pre><code class="language-bash">aws s3 mv s3://session-authoring-tool/source_materials/temp/lesson1.zip s3://session-authoring-tool/source_materials/final/lesson1.zip
+</code></pre>
+<h3><strong>النتيجة</strong></h3>
+<p>من:</p>
+<pre><code class="language-text">source_materials/temp/lesson1.zip
+</code></pre>
+<p>إلى:</p>
+<pre><code class="language-text">source_materials/final/lesson1.zip
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">10. أوامر `s3api` المهمة</h1>
+</div>
+<h2><strong>Command 29: التأكد من وجود ملف بدون تحميله</strong></h2>
+<pre><code class="language-bash">aws s3api head-object \
+  --bucket session-authoring-tool \
+  --key source_materials/150169015780_mt.zip
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يسأل S3:</p>
+<blockquote>
+<p>هل الملف ده موجود؟ وهاتلي Metadata بتاعته.</p>
+</blockquote>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-json">{
+  &quot;AcceptRanges&quot;: &quot;bytes&quot;,
+  &quot;LastModified&quot;: &quot;2026-06-14T09:10:00+00:00&quot;,
+  &quot;ContentLength&quot;: 3045992,
+  &quot;ContentType&quot;: &quot;application/zip&quot;,
+  &quot;ETag&quot;: &quot;\&quot;abc123\&quot;&quot;
+}
+</code></pre>
+<h3><strong>استخدامه في الباك اند</strong></h3>
+<p>ده نفس معنى <code>HeadObject</code> اللي ممكن تستخدمه في <code>boto3</code> قبل التحميل.</p>
+<h3><strong>لو الملف مش موجود</strong></h3>
+<p>ممكن يظهر:</p>
+<pre><code class="language-text">An error occurred (404) when calling the HeadObject operation: Not Found
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-text">NoSuchKey
+</code></pre>
+<hr>
+<h2><strong>Command 30: إنشاء Prefix فاضي وهمي</strong></h2>
+<pre><code class="language-bash">aws s3api put-object \
+  --bucket session-authoring-tool \
+  --key source_materials/math_sessions/
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>ينشئ Object فاضي اسمه:</p>
+<pre><code class="language-text">source_materials/math_sessions/
+</code></pre>
+<h3><strong>ليه ده بيظهر كفولدر؟</strong></h3>
+<p>لأن الـ Key بينتهي بـ <code>/</code>.</p>
+<hr>
+<h2><strong>Command 31: عرض Objects كـ JSON</strong></h2>
+<pre><code class="language-bash">aws s3api list-objects-v2 \
+  --bucket session-authoring-tool \
+  --prefix source_materials/
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يرجع Objects تحت Prefix معين بصيغة JSON.</p>
+<h3><strong>مثال Output مختصر</strong></h3>
+<pre><code class="language-json">{
+  &quot;Contents&quot;: [
+    {
+      &quot;Key&quot;: &quot;source_materials/150169015780_mt.zip&quot;,
+      &quot;LastModified&quot;: &quot;2026-06-14T09:10:00+00:00&quot;,
+      &quot;Size&quot;: 3045992
+    }
+  ]
+}
+</code></pre>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>لما تحتاج Output قابل للمعالجة بالـ Scripts.</p>
+<hr>
+<h2><strong>Command 32: عرض أسماء الملفات فقط</strong></h2>
+<pre><code class="language-bash">aws s3api list-objects-v2 \
+  --bucket session-authoring-tool \
+  --prefix source_materials/ \
+  --query &quot;Contents[].Key&quot; \
+  --output text
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يعرض الـ Keys فقط بدل JSON كامل.</p>
+<h3><strong>مثال Output</strong></h3>
+<pre><code class="language-text">source_materials/150169015780_mt.zip
+source_materials/math_sessions/lesson1.zip
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">11. أوامر Presigned URL</h1>
+</div>
+<blockquote>
+<p>استخدمها بحذر، لأنها بتدي رابط مؤقت للوصول للملف.</p>
+</blockquote>
+<h2><strong>Command 33: إنشاء رابط مؤقت لملف</strong></h2>
+<pre><code class="language-bash">aws s3 presign s3://session-authoring-tool/source_materials/150169015780_mt.zip --expires-in 300
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>ينشئ URL صالح لمدة 300 ثانية.</p>
+<h3><strong>إمتى أستخدمه؟</strong></h3>
+<p>لو عايز تسمح بتحميل ملف Private لفترة مؤقتة.</p>
+<h3><strong>لكن في مشروعك الحالي</strong></h3>
+<p>لو Architecture بتقول إن الـ Backend هو اللي يحمل ويرجع الملف، يبقى Presigned URL مش ضروري.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">12. أوامر إنشاء وحذف Buckets</h1>
+</div>
+<blockquote>
+<p>غالبًا مش هتحتاجها يوميًا، لكن لازم تعرفها.</p>
+</blockquote>
+<h2><strong>Command 34: إنشاء Bucket</strong></h2>
+<pre><code class="language-bash">aws s3 mb s3://my-new-bucket-name
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>ينشئ Bucket جديد.</p>
+<h3><strong>مهم</strong></h3>
+<p>اسم الـ Bucket لازم يكون Unique عالميًا.</p>
+<hr>
+<h2><strong>Command 35: حذف Bucket فاضي</strong></h2>
+<pre><code class="language-bash">aws s3 rb s3://my-new-bucket-name
+</code></pre>
+<h3><strong>بيعمل إيه؟</strong></h3>
+<p>يحذف Bucket لو فاضي.</p>
+<hr>
+<h2><strong>Command 36: حذف Bucket بكل محتوياته</strong></h2>
+<pre><code class="language-bash">aws s3 rb s3://my-new-bucket-name --force
+</code></pre>
+<h3><strong>خطر جدًا</strong></h3>
+<p>بيمسح المحتويات ثم يحذف الـ Bucket.</p>
+<p>متستخدموش على Production إلا وأنت فاهم 100%.</p>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">13. أشهر المشاكل وحلها</h1>
+</div>
+<h2><strong>Problem 1: Unable to locate credentials</strong></h2>
+<h3><strong>الرسالة</strong></h3>
+<pre><code class="language-text">Unable to locate credentials
+</code></pre>
+<h3><strong>معناها</strong></h3>
+<p>AWS CLI مش لاقي Access Key و Secret Key.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws configure
+</code></pre>
+<p>ثم:</p>
+<pre><code class="language-bash">aws sts get-caller-identity
+</code></pre>
+<hr>
+<h2><strong>Problem 2: AccessDenied</strong></h2>
+<h3><strong>الرسالة</strong></h3>
+<pre><code class="language-text">An error occurred (AccessDenied)
+</code></pre>
+<h3><strong>معناها</strong></h3>
+<p>الـ User موجود لكن ملوش صلاحية.</p>
+<h3><strong>راجع الصلاحيات حسب العملية</strong></h3>
+<p>لو بتعمل List:</p>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/
+</code></pre>
+<p>تحتاج:</p>
+<pre><code class="language-text">s3:ListBucket
+</code></pre>
+<p>لو بتعمل Upload:</p>
+<pre><code class="language-bash">aws s3 cp file.zip s3://session-authoring-tool/source_materials/
+</code></pre>
+<p>تحتاج:</p>
+<pre><code class="language-text">s3:PutObject
+</code></pre>
+<p>لو بتعمل Download:</p>
+<pre><code class="language-bash">aws s3 cp s3://session-authoring-tool/source_materials/file.zip .
+</code></pre>
+<p>تحتاج:</p>
+<pre><code class="language-text">s3:GetObject
+</code></pre>
+<p>لو بتعمل Delete:</p>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/file.zip
+</code></pre>
+<p>تحتاج:</p>
+<pre><code class="language-text">s3:DeleteObject
+</code></pre>
+<hr>
+<h2><strong>Problem 3: NoSuchBucket</strong></h2>
+<h3><strong>معناها</strong></h3>
+<p>اسم الـ Bucket غلط أو مش في الحساب الحالي.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 ls
+</code></pre>
+<p>وتأكد من الاسم.</p>
+<hr>
+<h2><strong>Problem 4: NoSuchKey</strong></h2>
+<h3><strong>معناها</strong></h3>
+<p>الملف مش موجود بالـ Key ده.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --recursive
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-bash">aws s3api head-object \
+  --bucket session-authoring-tool \
+  --key source_materials/file.zip
+</code></pre>
+<hr>
+<h2><strong>Problem 5: SignatureDoesNotMatch</strong></h2>
+<h3><strong>معناها غالبًا</strong></h3>
+<ul>
+<li>Secret Key غلط.</li>
+<li>Region غلط.</li>
+<li>System clock فيه مشكلة.</li>
+<li>Credentials قديمة.</li>
+</ul>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws configure list
+</code></pre>
+<pre><code class="language-bash">aws sts get-caller-identity
+</code></pre>
+<p>ولو لسه المشكلة موجودة:</p>
+<pre><code class="language-bash">aws configure
+</code></pre>
+<hr>
+<h2><strong>Problem 6: رفعت الملف في مكان غلط</strong></h2>
+<h3><strong>مثال</strong></h3>
+<p>أنت رفعت هنا:</p>
+<pre><code class="language-text">source_material/lesson.zip
+</code></pre>
+<p>لكن الباك اند بيدور هنا:</p>
+<pre><code class="language-text">source_materials/lesson.zip
+</code></pre>
+<p>لاحظ الفرق:</p>
+<pre><code class="language-text">source_material
+source_materials
+</code></pre>
+<h3><strong>الحل</strong></h3>
+<p>اعرض كل الملفات:</p>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/ --recursive
+</code></pre>
+<p>ثم انقل الملف:</p>
+<pre><code class="language-bash">aws s3 mv s3://session-authoring-tool/source_material/lesson.zip s3://session-authoring-tool/source_materials/lesson.zip
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">14. IAM Policies مهمة</h1>
+</div>
+<h2><strong>Policy قراءة فقط للباك اند</strong></h2>
+<p>لو الباك اند محتاج يقرأ من:</p>
+<pre><code class="language-text">source_materials/
+</code></pre>
+<p>استخدم Policy زي دي:</p>
+<pre><code class="language-json">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;ListOnlySourceMaterialsPrefix&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: &quot;s3:ListBucket&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::session-authoring-tool&quot;,
+      &quot;Condition&quot;: {
+        &quot;StringLike&quot;: {
+          &quot;s3:prefix&quot;: &quot;source_materials/*&quot;
+        }
+      }
+    },
+    {
+      &quot;Sid&quot;: &quot;ReadObjectsFromSourceMaterials&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: &quot;s3:GetObject&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::session-authoring-tool/source_materials/*&quot;
+    }
+  ]
+}
+</code></pre>
+<hr>
+<h2><strong>Policy قراءة ورفع بدون حذف</strong></h2>
+<p>لو الـ CLI User محتاج يرفع ويقرأ:</p>
+<pre><code class="language-json">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;ListSourceMaterialsPrefix&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: &quot;s3:ListBucket&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::session-authoring-tool&quot;,
+      &quot;Condition&quot;: {
+        &quot;StringLike&quot;: {
+          &quot;s3:prefix&quot;: &quot;source_materials/*&quot;
+        }
+      }
+    },
+    {
+      &quot;Sid&quot;: &quot;ReadWriteObjectsInSourceMaterials&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;s3:GetObject&quot;,
+        &quot;s3:PutObject&quot;
+      ],
+      &quot;Resource&quot;: &quot;arn:aws:s3:::session-authoring-tool/source_materials/*&quot;
+    }
+  ]
+}
+</code></pre>
+<h3><strong>مهم</strong></h3>
+<p>لاحظ إننا محطيناش:</p>
+<pre><code class="language-text">s3:DeleteObject
+</code></pre>
+<p>ليه؟</p>
+<p>لأن لو الـ User مش محتاج يمسح، متديلوش صلاحية مسح.</p>
+<p>ده مبدأ:</p>
+<pre><code class="language-text">Least Privilege
+</code></pre>
+<hr>
+<h2><strong>Policy فيها حذف</strong></h2>
+<p>استخدمها فقط لو محتاج فعلًا:</p>
+<pre><code class="language-json">{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;ListSourceMaterials&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: &quot;s3:ListBucket&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::session-authoring-tool&quot;,
+      &quot;Condition&quot;: {
+        &quot;StringLike&quot;: {
+          &quot;s3:prefix&quot;: &quot;source_materials/*&quot;
+        }
+      }
+    },
+    {
+      &quot;Sid&quot;: &quot;ReadWriteDeleteSourceMaterials&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;s3:GetObject&quot;,
+        &quot;s3:PutObject&quot;,
+        &quot;s3:DeleteObject&quot;
+      ],
+      &quot;Resource&quot;: &quot;arn:aws:s3:::session-authoring-tool/source_materials/*&quot;
+    }
+  ]
+}
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">15. ملف `.env` النهائي للباك اند</h1>
+</div>
+<pre><code class="language-env">AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_DEFAULT_REGION=eu-west-1
+
+SESSION_AUTHORING_S3_BUCKET=session-authoring-tool
+SESSION_AUTHORING_S3_PREFIX=source_materials/
+</code></pre>
+<p>وفي <code>.gitignore</code>:</p>
+<pre><code class="language-gitignore">.env
+</code></pre>
+<h2><strong>قاعدة أمان</strong></h2>
+<pre><code class="language-text">Secrets stay on the server only.
+</code></pre>
+<p>يعني:</p>
+<ul>
+<li>مفاتيح AWS لا تظهر في Frontend.</li>
+<li>لا تترفع على GitHub.</li>
+<li>لا تتحط Hardcoded داخل الكود.</li>
+</ul>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">16. الربط بين CLI والباك اند</h1>
+</div>
+<p>لو رفعت ملف كده:</p>
+<pre><code class="language-bash">aws s3 cp 150169015780_mt.zip s3://session-authoring-tool/source_materials/
+</code></pre>
+<p>يبقى الباك اند لازم يدور على:</p>
+<pre><code class="language-text">Bucket = session-authoring-tool
+Key = source_materials/150169015780_mt.zip
+</code></pre>
+<p>لو الباك اند بيدور على:</p>
+<pre><code class="language-text">source_material/150169015780_mt.zip
+</code></pre>
+<p>مش هيلاقيه.</p>
+<p>لو الباك اند بيدور على:</p>
+<pre><code class="language-text">prod/source_materials/150169015780_mt.zip
+</code></pre>
+<p>برضه مش هيلاقيه.</p>
+<h2><strong>تبسيط سينيور</strong></h2>
+<p>الـ CLI والباك اند لازم يتفقوا على نفس:</p>
+<pre><code class="language-text">Bucket
+Prefix
+File Name
+Region
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">17. Naming Convention مهم لمشروعك</h1>
+</div>
+<p>بما إن السيستم ممكن يدور على:</p>
+<pre><code class="language-text">{id}_mt.zip
+</code></pre>
+<p>أو:</p>
+<pre><code class="language-text">{id}.zip
+</code></pre>
+<p>يبقى خليك ثابت.</p>
+<p>مثال مفضل:</p>
+<pre><code class="language-text">150169015780_mt.zip
+</code></pre>
+<p>والأفضل توثق ده:</p>
+<pre><code class="language-text">Session source materials naming: {id}_mt.zip
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">18. Command Cheat Sheet نهائي</h1>
+</div>
+<h2><strong>Setup</strong></h2>
+<pre><code class="language-bash">aws --version
+</code></pre>
+<pre><code class="language-bash">aws configure
+</code></pre>
+<pre><code class="language-bash">aws sts get-caller-identity
+</code></pre>
+<pre><code class="language-bash">aws configure list
+</code></pre>
+<hr>
+<h2><strong>List</strong></h2>
+<pre><code class="language-bash">aws s3 ls
+</code></pre>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/
+</code></pre>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/
+</code></pre>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --recursive
+</code></pre>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --recursive --human-readable --summarize
+</code></pre>
+<hr>
+<h2><strong>Upload</strong></h2>
+<pre><code class="language-bash">aws s3 cp file.zip s3://session-authoring-tool/source_materials/
+</code></pre>
+<pre><code class="language-bash">aws s3 cp file.zip s3://session-authoring-tool/source_materials/new-name.zip
+</code></pre>
+<pre><code class="language-bash">aws s3 cp ./folder/ s3://session-authoring-tool/source_materials/ --recursive
+</code></pre>
+<pre><code class="language-bash">aws s3 cp . s3://session-authoring-tool/source_materials/ --recursive --exclude &quot;*&quot; --include &quot;*.zip&quot;
+</code></pre>
+<hr>
+<h2><strong>Download</strong></h2>
+<pre><code class="language-bash">aws s3 cp s3://session-authoring-tool/source_materials/file.zip .
+</code></pre>
+<pre><code class="language-bash">aws s3 cp s3://session-authoring-tool/source_materials/ ./downloads/ --recursive
+</code></pre>
+<hr>
+<h2><strong>Sync</strong></h2>
+<pre><code class="language-bash">aws s3 sync ./folder/ s3://session-authoring-tool/source_materials/
+</code></pre>
+<pre><code class="language-bash">aws s3 sync ./folder/ s3://session-authoring-tool/source_materials/ --delete --dryrun
+</code></pre>
+<hr>
+<h2><strong>Delete</strong></h2>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/file.zip
+</code></pre>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/folder/ --recursive --dryrun
+</code></pre>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/folder/ --recursive
+</code></pre>
+<hr>
+<h2><strong>Move / Rename</strong></h2>
+<pre><code class="language-bash">aws s3 mv s3://session-authoring-tool/source_materials/old.zip s3://session-authoring-tool/source_materials/new.zip
+</code></pre>
+<hr>
+<h2><strong>s3api</strong></h2>
+<pre><code class="language-bash">aws s3api head-object --bucket session-authoring-tool --key source_materials/file.zip
+</code></pre>
+<pre><code class="language-bash">aws s3api put-object --bucket session-authoring-tool --key source_materials/math_sessions/
+</code></pre>
+<pre><code class="language-bash">aws s3api list-objects-v2 --bucket session-authoring-tool --prefix source_materials/
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">19. تدريبات عملية</h1>
+</div>
+<h2><strong>Task 1</strong></h2>
+<p>اعرف أنت داخل بأنهي AWS User.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws sts get-caller-identity
+</code></pre>
+<hr>
+<h2><strong>Task 2</strong></h2>
+<p>اعرض كل الـ Buckets.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 ls
+</code></pre>
+<hr>
+<h2><strong>Task 3</strong></h2>
+<p>اعرض محتويات <code>source_materials/</code>.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/
+</code></pre>
+<hr>
+<h2><strong>Task 4</strong></h2>
+<p>اعرض كل الملفات داخل <code>source_materials/</code> حتى الفرعية.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 ls s3://session-authoring-tool/source_materials/ --recursive
+</code></pre>
+<hr>
+<h2><strong>Task 5</strong></h2>
+<p>ارفع ملف اسمه:</p>
+<pre><code class="language-text">150169015780_mt.zip
+</code></pre>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 cp 150169015780_mt.zip s3://session-authoring-tool/source_materials/
+</code></pre>
+<hr>
+<h2><strong>Task 6</strong></h2>
+<p>اعمل Prefix فرعي اسمه:</p>
+<pre><code class="language-text">math_sessions/
+</code></pre>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3api put-object \
+  --bucket session-authoring-tool \
+  --key source_materials/math_sessions/
+</code></pre>
+<hr>
+<h2><strong>Task 7</strong></h2>
+<p>ارفع ملف داخل <code>math_sessions</code>.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 cp lesson1.zip s3://session-authoring-tool/source_materials/math_sessions/lesson1.zip
+</code></pre>
+<hr>
+<h2><strong>Task 8</strong></h2>
+<p>تأكد إن الملف موجود بدون تحميل.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3api head-object \
+  --bucket session-authoring-tool \
+  --key source_materials/math_sessions/lesson1.zip
+</code></pre>
+<hr>
+<h2><strong>Task 9</strong></h2>
+<p>اعمل Preview لحذف <code>math_sessions</code>.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/math_sessions/ --recursive --dryrun
+</code></pre>
+<hr>
+<h2><strong>Task 10</strong></h2>
+<p>نفذ الحذف الحقيقي بعد التأكد.</p>
+<h3><strong>الحل</strong></h3>
+<pre><code class="language-bash">aws s3 rm s3://session-authoring-tool/source_materials/math_sessions/ --recursive
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">20. قواعد ذهبية من الثلاث خبراء</h1>
+</div>
+<h2><strong>رأي Senior Backend Engineer</strong></h2>
+<p>أي ملف الباك اند هيدور عليه لازم تعرف:</p>
+<pre><code class="language-text">Bucket
+Key
+Region
+Credentials
+</code></pre>
+<p>لو واحد فيهم غلط، التحميل هيفشل.</p>
+<hr>
+<h2><strong>رأي Cloud / DevOps Engineer</strong></h2>
+<p>قبل أي أمر خطر، شغل:</p>
+<pre><code class="language-bash">--dryrun
+</code></pre>
+<p>خصوصًا مع:</p>
+<pre><code class="language-bash">rm --recursive
+sync --delete
+</code></pre>
+<hr>
+<h2><strong>رأي Security Engineer</strong></h2>
+<p>متديش صلاحية زيادة.</p>
+<p>لو محتاج قراءة فقط:</p>
+<pre><code class="language-text">s3:GetObject
+s3:ListBucket
+</code></pre>
+<p>لو محتاج رفع:</p>
+<pre><code class="language-text">s3:PutObject
+</code></pre>
+<p>لو مش محتاج حذف، متديش:</p>
+<pre><code class="language-text">s3:DeleteObject
+</code></pre>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">21. الخلاصة النهائية</h1>
+</div>
+<p>احفظ المعادلة دي:</p>
+<pre><code class="language-text">S3 URI = s3://bucket/key
+</code></pre>
+<p>مثال:</p>
+<pre><code class="language-text">s3://session-authoring-tool/source_materials/150169015780_mt.zip
+</code></pre>
+<p>يتحول إلى:</p>
+<pre><code class="language-text">Bucket = session-authoring-tool
+Key = source_materials/150169015780_mt.zip
+</code></pre>
+<p>والقاعدة الأمنية:</p>
+<pre><code class="language-text">Frontend never sees secrets.
+Backend owns credentials.
+S3 bucket stays private.
+CLI is for admin/dev operations.
+</code></pre>
+<h2><strong>تبسيط سينيور نهائي</strong></h2>
+<p>لو فهمت 4 حاجات دول، هتعرف تتعامل مع S3 في أي مشروع:</p>
+<ol>
+<li>الـ Bucket هو المخزن الكبير.</li>
+<li>الـ Prefix هو شكل فولدر لكنه مش فولدر حقيقي.</li>
+<li>الـ Key هو اسم الملف الكامل جوه S3.</li>
+<li>المفاتيح السرية مكانها السيرفر فقط، مش الفرونت إند.</li>
+</ol>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">22. المراجع الرسمية</h1>
+</div>
+<ul>
+<li>AWS CLI S3 Command Reference: <a href="https://docs.aws.amazon.com/cli/latest/reference/s3/">https://docs.aws.amazon.com/cli/latest/reference/s3/</a></li>
+<li>AWS CLI S3 User Guide: <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-services-s3-commands.html">https://docs.aws.amazon.com/cli/latest/userguide/cli-services-s3-commands.html</a></li>
+<li>AWS CLI S3API Command Reference: <a href="https://docs.aws.amazon.com/cli/latest/reference/s3api/">https://docs.aws.amazon.com/cli/latest/reference/s3api/</a></li>
+<li>AWS CLI <code>put-object</code> Reference: <a href="https://awscli.amazonaws.com/v2/documentation/api/2.13.0/reference/s3api/put-object.html">https://awscli.amazonaws.com/v2/documentation/api/2.13.0/reference/s3api/put-object.html</a></li>
+</ul>
+<hr>
+<div class="chapter-container" style="background: rgba(56, 189, 248, 0.05); border-radius: 15px; padding: 25px; margin: 40px 0; border: 1px solid var(--primary);">
+<h1 style="color: var(--primary); text-align: center; border-bottom: none;">نهاية الهاند بوك</h1>
+</div>
+<blockquote>
+<p>راجع قسم Cheat Sheet قبل الشغل السريع، وراجع الأقسام التفصيلية لما تظهر مشكلة أو Error.</p>
+</blockquote>
+
+    <div class="nav-links">
+      <a href="index.html" class="btn btn-secondary">العودة للفهرس</a>
+    </div>
+  </div>
+
+  <!-- Prism.js Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-docker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+</body>
+</html>
